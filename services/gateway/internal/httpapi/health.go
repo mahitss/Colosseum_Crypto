@@ -32,6 +32,7 @@ func NewHandlerWithServices(service marketService, intelligence intelligenceRead
 	})
 	registerMarketRoutes(mux, service)
 	registerIntelligenceRoutes(mux, intelligence)
+	registerCopilotRoutes(mux)
 	return withRequestID(mux)
 }
 
