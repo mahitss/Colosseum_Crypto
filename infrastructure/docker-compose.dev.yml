@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: prophet-postgres
+    environment:
+      POSTGRES_DB: prophet
+      POSTGRES_USER: prophet
+      POSTGRES_PASSWORD: prophet
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: prophet-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:

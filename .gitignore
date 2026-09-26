@@ -1,0 +1,44 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.npm/
+
+# Go
+bin/
+coverage.out
+*.test
+*.exe
+
+# Python
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+*.pyc
+
+# Rust
+/target/
+**/target/
+
+# Foundry
+contracts/evm/cache/
+contracts/evm/out/
+contracts/evm/lib/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker / infra
+*.pid
+
+# Misc
+*.log
