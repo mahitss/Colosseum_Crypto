@@ -1,9 +1,9 @@
-.PHONY: dev test lint build
+.PHONY: dev test lint build panta-smoke
 
 DEV_COMPOSE := infrastructure/docker-compose.dev.yml
 
 help:
-	@echo "Available targets: dev, test, lint, build"
+	@echo "Available targets: dev, test, lint, build, panta-smoke"
 
 default: help
 
@@ -13,6 +13,7 @@ dev:
 
 test:
 	cd apps/web && npm run build
+	cd packages/types && go test ./...
 	cd services/gateway && go test ./...
 	cd services/panta-adapter && go test ./...
 	cd services/intelligence && python -m pytest -q
@@ -33,3 +34,6 @@ build:
 	cd services/intelligence && python -m compileall app
 	cargo build --manifest-path services/market-engine/Cargo.toml
 	cd contracts/evm && forge build
+
+panta-smoke:
+	cd services/panta-adapter && go run ./cmd/smoke-test
