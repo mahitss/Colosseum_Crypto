@@ -10,7 +10,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"prophet/gateway/internal/httpapi"
+	"prophet/gateway/internal/intelligence"
 	"prophet/gateway/internal/markets"
 )
 
@@ -33,11 +35,30 @@ func main() {
 		logger.Error("invalid PANTA_ADAPTER_URL", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		logger.Error("DATABASE_URL is required for the intelligence API")
+		os.Exit(1)
+	}
+	database, err := pgxpool.New(context.Background(), databaseURL)
+	if err != nil {
+		logger.Error("could not configure PostgreSQL", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	defer database.Close()
+	startupContext, startupCancel := context.WithTimeout(context.Background(), 15*time.Second)
+	if err := intelligence.Migrate(startupContext, database); err != nil {
+		startupCancel()
+		logger.Error("intelligence database migration failed", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	startupCancel()
+	repository := intelligence.NewRepository(database)
 	logger.Info("gateway listening", slog.String("address", addr))
 
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           httpapi.NewHandlerWithMarkets(adapterClient),
+		Handler:           httpapi.NewHandlerWithServices(adapterClient, repository),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	shutdown, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

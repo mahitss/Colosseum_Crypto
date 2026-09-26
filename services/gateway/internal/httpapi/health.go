@@ -20,6 +20,10 @@ func NewHandler() http.Handler {
 }
 
 func NewHandlerWithMarkets(service marketService) http.Handler {
+	return NewHandlerWithServices(service, nil)
+}
+
+func NewHandlerWithServices(service marketService, intelligence intelligenceReader) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -27,6 +31,7 @@ func NewHandlerWithMarkets(service marketService) http.Handler {
 		_ = json.NewEncoder(w).Encode(healthResponse{Status: "ok"})
 	})
 	registerMarketRoutes(mux, service)
+	registerIntelligenceRoutes(mux, intelligence)
 	return withRequestID(mux)
 }
 

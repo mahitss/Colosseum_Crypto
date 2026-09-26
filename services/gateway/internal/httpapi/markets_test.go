@@ -26,8 +26,9 @@ func (f fakeMarkets) GetMarket(context.Context, string) (types.Market, error) {
 }
 
 func TestMarketRoutesReturnProphetTypesAndRequestID(t *testing.T) {
+	volume := types.HumanUSDC("20.00")
 	service := fakeMarkets{
-		list: types.MarketPage{Items: []types.Market{{ID: "id-1", Title: "domain market", VolumeUSDC: "20.00"}}},
+		list: types.MarketPage{Items: []types.Market{{ID: "id-1", Title: "domain market", VolumeUSDC: &volume}}},
 		one:  types.Market{ID: "id-1", Title: "domain market"},
 	}
 	handler := NewHandlerWithMarkets(service)

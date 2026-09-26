@@ -1,5 +1,9 @@
 package types
 
+import "time"
+
+const SourcePanta = "panta"
+
 // HumanUSDC is a decimal-denominated USDC amount, for example "20.00".
 type HumanUSDC string
 
@@ -21,7 +25,12 @@ type Market struct {
 	Region            string     `json:"region"`
 	Resolved          bool       `json:"resolved"`
 	Status            string     `json:"status"`
-	VolumeUSDC        HumanUSDC  `json:"volumeUsdc"`
+	Source            string     `json:"source"`
+	SourceMarketID    string     `json:"source_market_id"`
+	VolumeUSDC        *HumanUSDC `json:"volumeUsdc"`
+	CreatedAt         *time.Time `json:"created_at"`
+	ClosesAt          *time.Time `json:"closes_at"`
+	ResolutionStatus  *string    `json:"resolution_status"`
 	CampaignID        *string    `json:"campaignId"`
 	CreatedByPartner  bool       `json:"createdByPartner"`
 	YesPrice          *HumanUSDC `json:"yesPrice"`

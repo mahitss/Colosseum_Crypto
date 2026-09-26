@@ -45,11 +45,12 @@ func (s *Service) GetMarket(ctx context.Context, id string) (types.Market, error
 
 func MapMarket(market client.PantaMarket) types.Market {
 	return types.Market{
-		ID: market.MarketID, Category: market.Category, Title: market.Title,
+		ID: market.MarketID, Source: types.SourcePanta, SourceMarketID: market.MarketID,
+		Category: market.Category, Title: market.Title,
 		Description: market.Description, Images: market.Images, Phase: market.Phase,
 		MarketType: market.MarketType, StartTime: market.StartTime, EndTime: market.EndTime,
 		ResolutionTime: market.ResolutionTime, Region: market.Region, Resolved: market.Resolved,
-		Status: market.Status, VolumeUSDC: types.HumanUSDC(market.VolumeUSDC),
+		Status: market.Status, VolumeUSDC: toHumanUSDC(&market.VolumeUSDC),
 		CampaignID: market.CampaignID, CreatedByPartner: market.CreatedByPartner,
 		YesPrice: toHumanUSDC(market.YesPrice), NoPrice: toHumanUSDC(market.NoPrice),
 		PrimaryYesPrice: toHumanUSDC(market.PrimaryYesPrice), PrimaryNoPrice: toHumanUSDC(market.PrimaryNoPrice),
