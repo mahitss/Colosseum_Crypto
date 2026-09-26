@@ -27,4 +27,4 @@ make build
 
 ## Environment
 
-Copy `.env.example` to `.env` and fill in the required values.
+Use `.env.example` as the list of supported environment variables. Export values in the shell for the service being run; do not commit secrets.

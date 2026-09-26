@@ -1,12 +1,18 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
 
 from app.config import settings
+
+class HealthResponse(BaseModel):
+    status: str
+    service: str
+
 
 app = FastAPI(title=settings.app_name)
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
+def health() -> HealthResponse:
     return {"status": "ok", "service": settings.app_name}
 
 

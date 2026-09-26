@@ -1,14 +1,19 @@
 import os
-from dataclasses import dataclass
+
+from pydantic import BaseModel, Field
 
 
-@dataclass(frozen=True)
-class Settings:
+class Settings(BaseModel):
     app_name: str = "prophet-intelligence"
-    environment: str = os.getenv("APP_ENV", "development")
-    port: int = int(os.getenv("PORT", "8001"))
-    ai_provider: str = os.getenv("AI_PROVIDER", "openai")
-    ai_api_key: str = os.getenv("AI_API_KEY", "")
+    environment: str = "development"
+    port: int = Field(default=8001, ge=1, le=65535)
+    ai_provider: str = "openai"
+    ai_api_key: str = ""
 
 
-settings = Settings()
+settings = Settings(
+    environment=os.getenv("APP_ENV", "development"),
+    port=os.getenv("PORT", "8001"),
+    ai_provider=os.getenv("AI_PROVIDER", "openai"),
+    ai_api_key=os.getenv("AI_API_KEY", ""),
+)

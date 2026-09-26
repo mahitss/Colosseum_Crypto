@@ -5,18 +5,14 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
+
+	"prophet/gateway/internal/httpapi"
 )
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	logger.Info("gateway starting")
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = fmt.Fprintf(w, `{"status":"ok"}`)
-	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -26,7 +22,12 @@ func main() {
 	addr := fmt.Sprintf(":%s", port)
 	logger.Info("gateway listening", slog.String("address", addr))
 
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	server := &http.Server{
+		Addr:              addr,
+		Handler:           httpapi.NewHandler(),
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		logger.Error("server failed", slog.Any("error", err))
 		os.Exit(1)
 	}

@@ -2,12 +2,13 @@
 
 ## Getting started
 
-1. Copy `.env.example` to `.env` and set the required environment values.
-2. Start the local infrastructure services:
+1. Use `.env.example` as the list of supported variables and export the values needed by each service in your shell.
+2. Install the frontend dependencies once with `npm ci` from `apps/web`.
+3. Install the Python service dependencies with `python -m pip install -r requirements.txt` from `services/intelligence`.
+4. Start the local infrastructure services:
    - PostgreSQL
    - Redis
-3. Install frontend dependencies and start the web app.
-4. Run the service and package test suites as needed.
+5. Run the service and package test suites as needed.
 
 ## Local infrastructure
 
@@ -16,6 +17,8 @@ Use Docker Compose from the infrastructure directory:
 ```bash
 docker compose -f infrastructure/docker-compose.dev.yml up -d postgres redis
 ```
+
+Export the variables in your shell before starting a service; services do not automatically load a root `.env` file. Secrets should not be committed.
 
 ## Common commands
 
