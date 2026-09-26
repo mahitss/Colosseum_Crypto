@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,9 +106,15 @@ export default function CopilotPage() {
                         <p className="text-xs font-semibold text-slate-400 mb-2">Sources:</p>
                         <div className="flex flex-wrap gap-2">
                           {msg.sources.map((src, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs cursor-pointer hover:bg-slate-700">
-                              {src.type}: {src.title || src.id || 'Unknown'}
-                            </Badge>
+                            <Link 
+                              key={idx} 
+                              href={src.type === 'market' && src.id ? `/markets/${src.id}` : '#'}
+                              className="text-xs"
+                            >
+                              <Badge variant="secondary" className="cursor-pointer hover:bg-slate-700">
+                                {src.type}: {src.title || src.id || 'Unknown'}
+                              </Badge>
+                            </Link>
                           ))}
                         </div>
                       </div>
