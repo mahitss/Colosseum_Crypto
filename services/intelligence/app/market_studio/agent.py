@@ -119,13 +119,17 @@ def _coerce_draft_payload(raw: Dict[str, Any]) -> Dict[str, Any]:
         str(item).strip() for item in sources if str(item).strip()
     ][:20]
 
-    # Never accept a "confirmed" flag without a concrete source string.
-    if not payload["sources_of_truth"]:
-        payload["resolution_source_confirmed"] = False
-    else:
-        payload["resolution_source_confirmed"] = bool(
-            payload.get("resolution_source_confirmed", False)
-        )
+    # The assistant must NEVER mark the resolution source as confirmed. It has
+    # no way to know whether the user actually named this source or whether the
+    # model just invented something plausible, and a self-reported "true" from
+    # untrusted model output is not evidence of anything.
+    #
+    # Confirmation is a human act, performed by ticking the checkbox in the
+    # wizard. The prompt asks the model to flag when a source is ambiguous, but
+    # that is a request for clarification, not permission to self-authorise:
+    # forcing this to False here is what makes the rule structural rather than
+    # a matter of the model cooperating.
+    payload["resolution_source_confirmed"] = False
 
     category = str(payload.get("category", "other")).strip().lower()
     payload["category"] = category if category in PANTA_CATEGORIES else "other"

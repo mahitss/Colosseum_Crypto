@@ -105,8 +105,10 @@ REQUIREMENTS FOR A USABLE DRAFT
 - "image_url" is a placeholder you leave empty ("") unless the user supplied a URL.
   Panta requires it, but the human must provide it; an empty value is honest and
   validation will block creation until it is supplied.
-- "resolution_source_confirmed" is true ONLY when the user themselves named a
-  specific authoritative source in their description. Otherwise it is false.
+- "resolution_source_confirmed" is always false in your output and is ignored
+  when parsed. Only the human can confirm a resolution source, by ticking a
+  checkbox in the app. Never set it to true, even when the user clearly named a
+  source; that is the human's confirmation to give, not yours.
 
 Never output anything except the JSON object. No markdown fences, no commentary.
 """

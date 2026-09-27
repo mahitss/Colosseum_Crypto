@@ -378,8 +378,9 @@ async def test_agent_builds_draft_from_structured_model_output():
     assert result.draft is not None
     assert result.draft.category == "crypto"
     assert result.needs_clarification is False
-    # image_url present + source confirmed + outcomes present => valid
-    assert result.missing_fields == []
+    # The AI can never confirm the source; only the human can.
+    # _coerce_draft_payload forces resolution_source_confirmed = False.
+    assert "resolution_source_confirmation" in result.missing_fields
 
 
 @pytest.mark.asyncio

@@ -64,10 +64,17 @@ CREATE TABLE market_creation_attempts (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     CONSTRAINT market_creation_attempts_signature_unique UNIQUE (solana_signature),
-    -- Idempotency: the same (creation_attempt_id, draft_hash, wallet) triple is
-    -- one logical creation. Deliberately NOT keyed on the question text, which
-    -- is user-editable and therefore not a stable identity.
-    CONSTRAINT market_creation_attempts_idempotency UNIQUE (id, draft_hash, wallet_address),
+    -- Idempotency: one logical creation is identified by the Panta createId,
+    -- the exact content the user reviewed (draft_hash) and the paying wallet.
+    -- Deliberately NOT keyed on the question text, which is user-editable and
+    -- therefore not a stable identity.
+    --
+    -- create_id is the authority here: Panta assigns one createId per creation
+    -- attempt, so it is the natural key. The service also checks this in Go
+    -- before inserting; this constraint is what makes that check safe under
+    -- concurrency, where two simultaneous quotes could otherwise both pass the
+    -- GetByCreateID check and both insert.
+    CONSTRAINT market_creation_attempts_idempotency UNIQUE (create_id, draft_hash, wallet_address),
     CONSTRAINT market_creation_attempts_status_not_empty CHECK (length(trim(status)) > 0),
     -- Panta amounts are integer base-unit strings. Reject decimals, signs and
     -- exponents outright so no float or fractional value can ever be persisted.
