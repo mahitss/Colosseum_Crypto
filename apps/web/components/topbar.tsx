@@ -6,13 +6,14 @@ import { getHealth } from '@/lib/api-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Wallet, RefreshCw } from 'lucide-react';
+import { Search, Wallet, RefreshCw, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useWallet } from '@/components/wallet-provider';
 
 export function TopBar() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [walletConnected, setWalletConnected] = React.useState(false);
+  const { available, connected, publicKey, connect, disconnect, connecting } = useWallet();
 
   const { data: health, isLoading, refetch } = useQuery({
     queryKey: ['health'],
@@ -26,6 +27,11 @@ export function TopBar() {
       router.push(`/markets?search=${encodeURIComponent(searchQuery)}`);
     }
   };
+
+  const walletAddress = publicKey ?? '';
+  const shortAddress = walletAddress
+    ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`
+    : '';
 
   return (
     <header className="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4">
@@ -63,15 +69,35 @@ export function TopBar() {
         </div>
 
         {/* Wallet */}
-        <Button
-          variant={walletConnected ? 'secondary' : 'default'}
-          size="sm"
-          onClick={() => setWalletConnected(!walletConnected)}
-          className="gap-2"
-        >
-          <Wallet className="w-4 h-4" />
-          {walletConnected ? 'Connected' : 'Connect Wallet'}
-        </Button>
+        {!available ? (
+          <Badge variant="secondary" className="text-xs">Wallet unavailable</Badge>
+        ) : connected && publicKey ? (
+          <div className="flex items-center gap-2">
+            <Badge variant="success" className="text-xs font-mono">
+              {shortAddress}
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => disconnect()}
+              className="gap-2 text-slate-300 hover:text-white"
+            >
+              <LogOut className="w-4 h-4" />
+              Disconnect
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => connect()}
+            disabled={connecting}
+            className="gap-2"
+          >
+            <Wallet className="w-4 h-4" />
+            {connecting ? 'Connecting...' : 'Connect Wallet'}
+          </Button>
+        )}
       </div>
     </header>
   );

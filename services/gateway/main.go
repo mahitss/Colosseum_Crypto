@@ -14,6 +14,7 @@ import (
 	"prophet/gateway/internal/httpapi"
 	"prophet/gateway/internal/intelligence"
 	"prophet/gateway/internal/markets"
+	"prophet/gateway/internal/trading"
 )
 
 func main() {
@@ -54,11 +55,40 @@ func main() {
 	}
 	startupCancel()
 	repository := intelligence.NewRepository(database)
+
+	// Trading service: quote/build/broadcast/report against Panta and Solana.
+	// Trading is optional — enabled only when Panta API key and Solana RPC are configured.
+	var tradeHandler httpapi.TradeService
+	pantaAPIURL := os.Getenv("PANTA_API_URL")
+	pantaAPIKey := os.Getenv("PANTA_API_KEY")
+	solanaRPC := os.Getenv("SOLANA_RPC_URL")
+	if pantaAPIURL != "" && pantaAPIKey != "" && solanaRPC != "" {
+		pantaTrading, err := trading.NewPantaHTTPClient(pantaAPIURL, pantaAPIKey, 30*time.Second)
+		if err != nil {
+			logger.Error("invalid PANTA_API_URL for trading", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		broadcaster, err := trading.NewBroadcaster(solanaRPC, trading.BroadcasterOptions{})
+		if err != nil {
+			logger.Error("invalid SOLANA_RPC_URL for trading", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		tradeHandler = trading.NewService(
+			trading.NewRepository(database),
+			database,
+			pantaTrading,
+			broadcaster,
+		)
+		logger.Info("trading enabled")
+	} else {
+		logger.Warn("trading disabled: PANTA_API_URL, PANTA_API_KEY, and SOLANA_RPC_URL are all required")
+	}
+
 	logger.Info("gateway listening", slog.String("address", addr))
 
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           httpapi.NewHandlerWithServices(adapterClient, repository),
+		Handler:           httpapi.NewHandlerWithServices(adapterClient, repository, tradeHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	shutdown, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

@@ -76,10 +76,13 @@ sequenceDiagram
 |-------|-----------------|-------------|
 | Quote | `POST /api/v1/trades/quote` | Read-only quote from Panta |
 | Build | `POST /api/v1/trades/build` | Build unsigned transaction |
+| Validate | `POST /api/v1/trades/validate` | Validate wallet/network/market/side/amount context before signing |
 | Broadcast | `POST /api/v1/trades/broadcast` | Broadcast signed tx via configured RPC |
-| Report | `POST /api/v1/trades/report` | Report signature to Panta |
+| Confirm | `POST /api/v1/trades/confirm` | Poll Solana for confirmation |
+| Report | `POST /api/v1/trades/report` | Report signature to Panta + verify |
+| Complete | `POST /api/v1/trades/complete` | Mark trade completed |
 | Status | `GET /api/v1/trades/{id}` | Retrieve trade attempt status |
-| Verify | `POST /api/v1/trades/{id}/verify` | Verify with Panta |
+| Positions | `GET /api/v1/trades/positions/{wallet}` | Refresh positions from Panta |
 
 ## Panta API Usage
 
@@ -162,3 +165,31 @@ Key distinctions (never collapsed into one message):
 - Transaction format depends on the exact current Panta API schema (verify against live docs before production)
 - Confirmation strategy depends on Solana RPC availability
 - Real transaction testing requires manual user action (never automated in CI)
+
+---
+
+## Smoke Test Workflow (Read-Only)
+
+A manual smoke test can verify the trading plumbing **without spending funds**:
+
+1. Start the gateway with `PANTA_API_URL`, `PANTA_API_KEY`, and `SOLANA_RPC_URL` set.
+2. Verify `/health` returns `ok`.
+3. **Read-only quote:** `POST /api/v1/trades/quote` with a valid market ID, side, amount, and a test wallet public key. This only requests a quote; it does not place any order.
+4. Verify the response contains a `quote_reference` and a `trade_attempt_id`.
+5. **Optional build:** `POST /api/v1/trades/build` with the quote reference. This returns an unsigned transaction. Do NOT sign unless the developer explicitly chooses to test a real trade.
+6. Check `GET /api/v1/trades/{trade_attempt_id}` shows the attempt in `QUOTE_READY` state.
+
+**Real transactions require:**
+- explicit manual user action
+- showing the amount, market, and side
+- the user's explicit wallet signature
+- the user's own Solana RPC
+
+Never automate the signature. Never hide the amount, market, or side.
+
+### Deterministic Test Mode
+
+CI tests never touch mainnet. The Go test suite uses:
+- httptest servers for the Panta API (quote/build/report/verify/positions)
+- deterministic fixtures for Solana transactions (no real RPC)
+- an in-memory fake trade service for HTTP-layer tests

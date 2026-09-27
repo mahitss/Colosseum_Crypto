@@ -20,10 +20,10 @@ func NewHandler() http.Handler {
 }
 
 func NewHandlerWithMarkets(service marketService) http.Handler {
-	return NewHandlerWithServices(service, nil)
+	return NewHandlerWithServices(service, nil, nil)
 }
 
-func NewHandlerWithServices(service marketService, intelligence intelligenceReader) http.Handler {
+func NewHandlerWithServices(service marketService, intelligence intelligenceReader, trades TradeService) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -33,7 +33,7 @@ func NewHandlerWithServices(service marketService, intelligence intelligenceRead
 	registerMarketRoutes(mux, service)
 	registerIntelligenceRoutes(mux, intelligence)
 	registerCopilotRoutes(mux)
-	registerTradingRoutes(mux)
+	registerTradingRoutes(mux, trades)
 	return withRequestID(mux)
 }
 

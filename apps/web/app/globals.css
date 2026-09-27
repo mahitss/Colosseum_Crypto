@@ -3,13 +3,58 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: #f8fafc;
-  color: #0f172a;
+  background: #020617;
+  color: #f1f5f9;
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Wallet modal styling for dark theme */
+.wallet-adapter-modal-wrapper {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 0.75rem;
+  color: #f1f5f9;
+}
+
+.wallet-adapter-button {
+  background: #1e293b;
+  color: #f1f5f9;
+  border-radius: 0.5rem;
+}
+
+.wallet-adapter-button:hover {
+  background: #334155;
+}
+
+.wallet-adapter-modal-title {
+  color: #f1f5f9;
+}
+
+.wallet-adapter-modal-list li {
+  border-bottom: 1px solid #1e293b;
+}
+
+/* Focus visibility for accessibility */
+*:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
