@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { formatDistanceToNow, format } from 'date-fns';
+import { TradeTicket } from '@/components/trade-ticket';
 
 export default async function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -64,6 +65,9 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ i
           </CardContent>
         </Card>
       </div>
+
+      {/* Trade Ticket */}
+      <TradeTicket market={market} />
 
       {/* Probability Chart */}
       <Card>

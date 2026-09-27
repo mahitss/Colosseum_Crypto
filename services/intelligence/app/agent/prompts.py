@@ -83,8 +83,9 @@ def detect_intent(user_message: str) -> tuple[str, dict]:
         # Extract probability filter if present
         if "below" in message_lower or "under" in message_lower:
             for word in message_lower.split():
-                if word.replace(".", "").isdigit():
-                    filters["probability_max"] = float(word) / 100
+                cleaned = word.rstrip("%")
+                if cleaned.replace(".", "", 1).isdigit():
+                    filters["probability_max"] = float(cleaned) / 100
                     break
         return "SEARCH_MARKETS", filters
     

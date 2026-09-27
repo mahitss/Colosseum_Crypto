@@ -27,7 +27,7 @@ def health() -> HealthResponse:
     return {"status": "ok", "service": settings.app_name}
 
 # API endpoints
-@app.include_router(api_router)
+app.include_router(api_router)
 
 if __name__ == "__main__":
     import uvicorn
