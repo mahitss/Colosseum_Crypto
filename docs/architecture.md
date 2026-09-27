@@ -40,9 +40,52 @@ Rust Market Engine
 
 The Rust market engine handles deterministic signal computation and high-performance market-processing workflows. It is intentionally separate from the API layer so that signal logic can be developed and tested independently.
 
+## Market creation
+
+Next.js
+    ↓
+Go Gateway
+    ↓
+Python Intelligence (AI Market Architect, draft proposal only)
+    ↓
+Go Gateway (deterministic validation, quote, build)
+    ↓
+Panta API  →  Solana  →  Panta registration
+    ↓
+Prophet indexing
+
+Market creation is a distinct flow from trading. The user describes a market in
+prose, the AI Market Architect in `services/intelligence/app/market_studio/`
+turns it into a structured draft, and deterministic validation decides whether
+that draft is acceptable. The assistant never creates, signs, or submits
+anything, and market-creation logic is deliberately kept out of the read-only
+Copilot agent.
+
+The Panta integration for creation lives in `services/gateway/internal/marketstudio/`
+rather than in the Panta adapter, because creation is a write path with
+attempts, idempotency, and state tracking, while the adapter handles market
+reads. Fee amounts are carried as USDC base-unit integer strings end to end and
+are never parsed as floating point, because that is the format Panta specifies
+and rounding would change what the user is charged.
+
+A Solana signature is not a created market. A market exists only after Panta
+registration succeeds, and a confirmed transaction whose registration failed is
+reported as pending registration rather than as a failure. See
+[docs/market-studio.md](./market-studio.md) for the full flow, the nine-step
+wizard, and the error semantics.
+
 ## Custody boundary
 
-The backend stores only the Panta server API key in its runtime environment. It never receives wallet private keys or seed phrases. Future transaction flows will request unsigned transactions/instructions from Panta, have the user's wallet sign them, broadcast through a Solana RPC, and report only the resulting signature to Panta. Trading and signing are not implemented in this task.
+The backend stores only the Panta server API key in its runtime environment. It
+never receives wallet private keys or seed phrases.
+
+Trading requests an unsigned transaction from Panta, has the user's wallet sign
+it, broadcasts through a Solana RPC, and reports only the resulting signature
+back to Panta. Market creation follows the same custody rule: the gateway
+obtains an unsigned transaction from Panta and the user's wallet produces the
+signature. No server-side signing key exists anywhere in the system, and the
+`market_creation_attempts` table has no column for a private key, seed phrase,
+or signed transaction blob.
 
 ## Planned decomposition
 

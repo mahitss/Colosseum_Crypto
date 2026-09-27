@@ -12,6 +12,7 @@ dev:
 	cd apps/web && npm run dev
 
 test:
+	cd apps/web && node --test "scripts/*.test.mjs"
 	cd apps/web && npm run build
 	cd packages/types && go test ./...
 	cd services/gateway && go test ./...

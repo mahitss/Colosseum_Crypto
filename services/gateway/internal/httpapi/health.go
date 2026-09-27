@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"prophet/gateway/internal/marketstudio"
 	"prophet/gateway/internal/requestid"
 	"prophet/types"
 )
@@ -24,6 +25,18 @@ func NewHandlerWithMarkets(service marketService) http.Handler {
 }
 
 func NewHandlerWithServices(service marketService, intelligence intelligenceReader, trades TradeService) http.Handler {
+	return NewHandlerWithAllServices(service, intelligence, trades, nil, nil)
+}
+
+// NewHandlerWithAllServices also wires Market Studio. studio and interpreter may
+// both be nil, in which case the market-studio routes are simply not registered.
+func NewHandlerWithAllServices(
+	service marketService,
+	intelligence intelligenceReader,
+	trades TradeService,
+	studio MarketStudioService,
+	interpreter marketstudio.Interpreter,
+) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -34,6 +47,7 @@ func NewHandlerWithServices(service marketService, intelligence intelligenceRead
 	registerIntelligenceRoutes(mux, intelligence)
 	registerCopilotRoutes(mux)
 	registerTradingRoutes(mux, trades)
+	registerMarketStudioRoutes(mux, studio, interpreter)
 	return withRequestID(mux)
 }
 
