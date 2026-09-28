@@ -74,6 +74,38 @@ reported as pending registration rather than as a failure. See
 [docs/market-studio.md](./market-studio.md) for the full flow, the nine-step
 wizard, and the error semantics.
 
+## User-owned monitoring surface
+
+Watchlists, the signal radar, alert rules and the in-app notification inbox are
+the user-owned half of the platform. They are served by
+`services/gateway/internal/httpapi/{watchlists,alerts}.go` over tables created
+by migration `004_watchlists_alerts.sql`, and they require no credential beyond
+`DATABASE_URL` — unlike trading and market creation, which stay gated on
+Panta and Solana configuration.
+
+Ingestion is deliberately **not** part of the gateway. `services/gateway/cmd/worker`
+is a separate binary that polls Panta, persists observations, asks the
+deterministic engine for signals, bridges those signals into a fingerprinted
+event stream, evaluates alert rules, and delivers notifications. It is separate
+because the gateway serves user requests while the worker polls a third-party
+API, and those have completely different failure and scaling characteristics.
+
+Two properties are load-bearing and worth stating at the architecture level:
+
+- **Deduplication lives in the database.** Three `UNIQUE` constraints on
+  `market_observations`, `signal_events` and `alert_events`, every insert
+  `ON CONFLICT DO NOTHING`. A crashed-and-retried tick converges on exactly the
+  state an uninterrupted tick would have produced, which is also what makes the
+  worker's deliberately overlapping read window safe.
+- **No model participates in deciding whether an alert fires.** Matching is a
+  plain predicate, explanations are assembled mechanically from the fields that
+  are actually present, and all probability and money arithmetic uses
+  `math/big.Rat` so a threshold comparison cannot flip on floating-point
+  rounding at the boundary.
+
+See [docs/watchlists-alerts.md](./watchlists-alerts.md) for the data model, the
+evaluation order, the worker's operational limits, and the API surface.
+
 ## Custody boundary
 
 The backend stores only the Panta server API key in its runtime environment. It

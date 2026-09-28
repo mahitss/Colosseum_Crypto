@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Wallet, RefreshCw, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useWallet } from '@/components/wallet-provider';
+import { NotificationCenter } from '@/components/notification-center';
 
 export function TopBar() {
   const router = useRouter();
@@ -67,6 +68,9 @@ export function TopBar() {
             {isLoading ? 'Checking...' : health?.status || 'Unknown'}
           </Badge>
         </div>
+
+        {/* Notifications */}
+        <NotificationCenter />
 
         {/* Wallet */}
         {!available ? (

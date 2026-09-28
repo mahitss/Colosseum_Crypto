@@ -110,3 +110,141 @@ export interface SignalQueryParams {
   from?: string;
   to?: string;
 }
+
+// --- TASK 008 Enterprise Types ---
+
+export type Severity = 'INFO' | 'WATCH' | 'SIGNIFICANT' | 'CRITICAL';
+
+export type SignalType = 
+  | 'NEW_MARKET' 
+  | 'PROBABILITY_SHIFT' 
+  | 'ACTIVITY_CHANGE' 
+  | 'LIQUIDITY_CHANGE' 
+  | 'MARKET_MOVEMENT';
+
+export interface WatchlistSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  market_count: number;
+  latest_signal_severity: Severity | null;
+  latest_signal_at: string | null;
+}
+
+export interface Watchlist {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WatchlistMarket {
+  id: string;
+  title: string;
+  category: string | null;
+  status: string;
+  yes_probability: string | null;
+  no_probability: string | null;
+  closes_at: string | null;
+  latest_signal: SignalEvent | null;
+  latest_observation: { id: number; observed_at: string; yes_probability: string | null } | null;
+}
+
+export interface WatchlistIntelligence {
+  watchlist: Watchlist;
+  market_count: number;
+  markets: WatchlistMarket[];
+  recent_signals: SignalEvent[];
+  severity_distribution: Record<Severity, number>;
+  latest_update: string | null;
+}
+
+export interface SignalEvent {
+  id: number;
+  market_id: string;
+  source_market_id: string;
+  signal_type: SignalType;
+  severity: Severity;
+  metric: string;
+  previous_value: string | null;
+  current_value: string | null;
+  absolute_change: string | null;
+  percentage_change: string | null;
+  percentage_points: string | null;
+  observation_window: string;
+  observation_id: number;
+  observed_at: string;
+  fingerprint: string;
+  source: string;
+  created_at: string;
+}
+
+export interface RadarEvent extends SignalEvent {
+  market_summary: { id: string; title: string; category: string | null; yes_probability: string | null; no_probability: string | null; status: string };
+  explanation: string;
+  deep_link: string;
+}
+
+export interface RadarPage {
+  events: RadarEvent[];
+  next_cursor: string | null;
+  total: number;
+}
+
+export interface AlertRule {
+  id: string;
+  watchlist_id: string | null;
+  market_id: string | null;
+  name: string;
+  enabled: boolean;
+  signal_type: SignalType | null;
+  minimum_severity: Severity | null;
+  probability_change_threshold: string | null;
+  activity_change_threshold: string | null;
+  liquidity_change_threshold: string | null;
+  cooldown_seconds: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AlertRuleInput {
+  name: string;
+  enabled?: boolean;
+  watchlist_id?: string | null;
+  market_id?: string | null;
+  signal_type?: SignalType | null;
+  minimum_severity?: Severity | null;
+  probability_change_threshold?: string | null;
+  activity_change_threshold?: string | null;
+  liquidity_change_threshold?: string | null;
+  cooldown_seconds?: number;
+}
+
+export interface AlertEvent {
+  id: number;
+  alert_rule_id: string;
+  signal_event_id: number;
+  market_id: string;
+  status: 'PENDING' | 'DELIVERED' | 'SUPPRESSED' | 'FAILED';
+  triggered_at: string;
+  delivered_at: string | null;
+}
+
+export interface AppNotification {
+  id: number;
+  title: string;
+  body: string;
+  severity: Severity;
+  market_id: string | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationsResponse {
+  notifications: AppNotification[];
+  next_cursor: string | null;
+  total: number;
+}

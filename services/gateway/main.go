@@ -57,8 +57,21 @@ func main() {
 	startupCancel()
 	repository := intelligence.NewRepository(database)
 
+	// TASK 008 enterprise surface: watchlists, the signal radar, alert rules and
+	// the notification inbox. All four read and write rows that already live in
+	// this database, so they are always available here and need no credentials
+	// beyond DATABASE_URL. Trading and market-studio remain optional below -
+	// they are gated on PANTA/SOLANA configuration and register no routes when it
+	// is absent - whereas these enterprise routes are registered unconditionally
+	// whenever a database is present, because a deployment that reached this
+	// point without a database already exited.
+	//
+	// The alert evaluator that actually fires these rules is started by the
+	// ingestion path, not here; this wiring only exposes the user-facing surface.
+	enterprise := enterpriseAPI{repository: repository}
+
 	// Trading service: quote/build/broadcast/report against Panta and Solana.
-	// Trading is optional — enabled only when Panta API key and Solana RPC are configured.
+	// Trading is optional - enabled only when Panta API key and Solana RPC are configured.
 	var tradeHandler httpapi.TradeService
 	var (
 		pantaCreation     marketstudio.PantaClient
@@ -130,12 +143,25 @@ func main() {
 		slog.Bool("panta_creation", pantaCreation != nil),
 		slog.Bool("solana_broadcast", solanaBroadcaster != nil),
 	)
+	logger.Info("enterprise api enabled",
+		slog.Bool("trading", tradeHandler != nil),
+	)
 
 	logger.Info("gateway listening", slog.String("address", addr))
 
 	server := &http.Server{
-		Addr:              addr,
-		Handler:           httpapi.NewHandlerWithAllServices(adapterClient, repository, tradeHandler, studioHandler, studioInterpreter),
+		Addr: addr,
+		Handler: httpapi.NewHandlerWithEnterprise(
+			adapterClient,
+			repository,
+			tradeHandler,
+			studioHandler,
+			studioInterpreter,
+			enterprise,
+			enterprise,
+			enterprise,
+			enterprise,
+		),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	shutdown, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -152,4 +178,104 @@ func main() {
 		logger.Error("server failed", slog.Any("error", err))
 		os.Exit(1)
 	}
+}
+
+// enterpriseAPI adapts *intelligence.Repository to the four service interfaces
+// the httpapi package declares for the TASK 008 routes.
+//
+// The adapter lives here rather than in the httpapi package on purpose. The
+// repository method names are the storage layer's vocabulary
+// (AddMarketToWatchlist, ListAlertRules, MarkNotificationRead, ...) while the
+// HTTP surface deliberately uses short names, and the two should not be made to
+// agree by giving the HTTP package a persistence dependency. Each method below
+// is a one-line delegation: no ownership decision, no re-scoping and no
+// translation happens in the adapter, so the ownership filters the repository
+// documents stay the only place a user id is turned into SQL.
+//
+// CreateRule and UpdateRule are the two methods that take an explicit userID
+// separately from the rule. The repository takes the owner from the rule struct
+// itself on create and from the WHERE clause on update, so the adapter writes
+// the resolved identity into the rule before delegating. That identity comes
+// from ResolveUser, never from the request body, so this cannot widen a write
+// beyond the acting user.
+type enterpriseAPI struct {
+	repository *intelligence.Repository
+}
+
+func (api enterpriseAPI) ListWatchlists(ctx context.Context, userID string) ([]intelligence.WatchlistSummary, error) {
+	return api.repository.ListWatchlists(ctx, userID)
+}
+
+func (api enterpriseAPI) GetWatchlist(ctx context.Context, userID, watchlistID string) (*intelligence.Watchlist, error) {
+	return api.repository.GetWatchlist(ctx, userID, watchlistID)
+}
+
+func (api enterpriseAPI) CreateWatchlist(ctx context.Context, userID, name string, description *string) (*intelligence.Watchlist, error) {
+	return api.repository.CreateWatchlist(ctx, userID, name, description)
+}
+
+func (api enterpriseAPI) UpdateWatchlist(ctx context.Context, userID, watchlistID, name string, description *string) (*intelligence.Watchlist, error) {
+	return api.repository.UpdateWatchlist(ctx, userID, watchlistID, name, description)
+}
+
+func (api enterpriseAPI) DeleteWatchlist(ctx context.Context, userID, watchlistID string) error {
+	return api.repository.DeleteWatchlist(ctx, userID, watchlistID)
+}
+
+func (api enterpriseAPI) AddMarket(ctx context.Context, userID, watchlistID, marketID string) error {
+	return api.repository.AddMarketToWatchlist(ctx, userID, watchlistID, marketID)
+}
+
+func (api enterpriseAPI) RemoveMarket(ctx context.Context, userID, watchlistID, marketID string) error {
+	return api.repository.RemoveMarketFromWatchlist(ctx, userID, watchlistID, marketID)
+}
+
+func (api enterpriseAPI) WatchlistIntelligence(ctx context.Context, userID, watchlistID string) (*intelligence.WatchlistIntelligence, error) {
+	return api.repository.WatchlistIntelligence(ctx, userID, watchlistID)
+}
+
+func (api enterpriseAPI) Radar(ctx context.Context, query intelligence.RadarQuery) ([]intelligence.RadarEvent, *string, int64, error) {
+	return api.repository.Radar(ctx, query)
+}
+
+func (api enterpriseAPI) ListRules(ctx context.Context, userID string) ([]intelligence.AlertRule, error) {
+	return api.repository.ListAlertRules(ctx, userID)
+}
+
+func (api enterpriseAPI) GetRule(ctx context.Context, userID, ruleID string) (*intelligence.AlertRule, error) {
+	return api.repository.GetAlertRule(ctx, userID, ruleID)
+}
+
+func (api enterpriseAPI) CreateRule(ctx context.Context, userID string, rule intelligence.AlertRule) (*intelligence.AlertRule, error) {
+	rule.UserID = userID
+	return api.repository.CreateAlertRule(ctx, rule)
+}
+
+func (api enterpriseAPI) UpdateRule(ctx context.Context, userID, ruleID string, rule intelligence.AlertRule) (*intelligence.AlertRule, error) {
+	rule.UserID = userID
+	return api.repository.UpdateAlertRule(ctx, userID, ruleID, rule)
+}
+
+func (api enterpriseAPI) DeleteRule(ctx context.Context, userID, ruleID string) error {
+	return api.repository.DeleteAlertRule(ctx, userID, ruleID)
+}
+
+func (api enterpriseAPI) ListEvents(ctx context.Context, userID string, limit int) ([]intelligence.AlertEvent, error) {
+	return api.repository.AlertEventList(ctx, userID, limit)
+}
+
+func (api enterpriseAPI) ListNotifications(ctx context.Context, userID string, limit int, unreadOnly bool) ([]intelligence.Notification, error) {
+	return api.repository.ListNotifications(ctx, userID, limit, unreadOnly)
+}
+
+func (api enterpriseAPI) UnreadCount(ctx context.Context, userID string) (int, error) {
+	return api.repository.UnreadNotificationCount(ctx, userID)
+}
+
+func (api enterpriseAPI) MarkRead(ctx context.Context, userID string, id int64) error {
+	return api.repository.MarkNotificationRead(ctx, userID, id)
+}
+
+func (api enterpriseAPI) MarkAllRead(ctx context.Context, userID string) (int64, error) {
+	return api.repository.MarkAllNotificationsRead(ctx, userID)
 }

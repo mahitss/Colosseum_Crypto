@@ -24,7 +24,7 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8080';
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
     this.name = 'ApiError';
@@ -68,9 +68,9 @@ class MarketStudioError extends Error {
   }
 }
 
-export { ApiError, MarketStudioError };
+export { MarketStudioError };
 
-async function fetchApi<T>(
+export async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {

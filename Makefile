@@ -1,9 +1,9 @@
-.PHONY: dev test lint build panta-smoke
+.PHONY: dev test lint build panta-smoke worker worker-build
 
 DEV_COMPOSE := infrastructure/docker-compose.dev.yml
 
 help:
-	@echo "Available targets: dev, test, lint, build, panta-smoke"
+	@echo "Available targets: dev, test, lint, build, panta-smoke, worker, worker-build"
 
 default: help
 
@@ -23,7 +23,7 @@ test:
 
 lint:
 	cd apps/web && npm run lint
-	cd services/gateway && go vet ./... && go test ./...
+	cd services/gateway && go vet ./... && go test ./... && go build -o bin/worker ./cmd/worker
 	cd services/panta-adapter && go vet ./... && go test ./...
 	cd services/intelligence && python -m compileall app
 	cargo clippy --manifest-path services/market-engine/Cargo.toml --all-targets -- -D warnings
@@ -35,6 +35,18 @@ build:
 	cd services/intelligence && python -m compileall app
 	cargo build --manifest-path services/market-engine/Cargo.toml
 	cd contracts/evm && forge build
+
+# worker-build compiles the background worker and the deterministic engine it
+# shells out to. These are the two binaries that make up the ingestion chain;
+# the worker is useless without the engine, so they are built together.
+worker-build:
+	cd services/gateway && go build -o bin/worker ./cmd/worker
+	cargo build --release --manifest-path services/market-engine/Cargo.toml
+
+# worker runs the alert-ingestion worker in the foreground. It requires
+# DATABASE_URL and MARKET_ENGINE_BIN; see docs/watchlists-alerts.md.
+worker: worker-build
+	cd services/gateway && go run ./cmd/worker
 
 panta-smoke:
 	cd services/panta-adapter && go run ./cmd/smoke-test
