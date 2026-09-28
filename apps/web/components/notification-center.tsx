@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Bell, CheckCheck } from 'lucide-react';
+import { Bell, CheckCheck, X } from 'lucide-react';
 import {
   getNotifications,
   getUnreadCount,
@@ -105,23 +105,23 @@ export function NotificationCenter() {
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+        className="relative p-1.5 rounded-lg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors"
         title="Notifications"
         aria-label={`Notifications (${unreadCount} unread)`}
         aria-expanded={open}
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-danger text-white text-[10px] font-semibold flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-semibold flex items-center justify-center">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-96 z-50 rounded-lg border border-slate-800 bg-slate-900 shadow-xl overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
-            <span className="text-sm font-medium text-white">Notifications</span>
+        <div className="absolute right-0 mt-2 w-96 z-50 rounded-xl border border-slate-800 bg-slate-900/95 backdrop-blur-sm shadow-2xl overflow-hidden animate-slide-in-from-top">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800/60">
+            <span className="text-sm font-semibold text-white">Notifications</span>
             {unreadCount > 0 && (
               <button
                 onClick={() => markAllRead.mutate()}
@@ -159,12 +159,12 @@ export function NotificationCenter() {
                   key={notification.id}
                   onClick={() => handleOpen(notification)}
                   className={cn(
-                    'w-full text-left flex gap-2.5 px-3 py-2.5 border-b border-slate-800/60 transition-colors hover:bg-slate-800/60',
-                    !notification.read_at && 'border-l-2 border-l-sky-500/60 bg-slate-800/20'
+                    'w-full text-left flex gap-2.5 px-4 py-3 border-b border-slate-800/60 transition-colors hover:bg-slate-800/50',
+                    !notification.read_at && 'border-l-2 border-l-sky-500/60 bg-slate-800/30'
                   )}
                 >
                   <span
-                    className={cn('mt-0.5 h-8 w-[3px] shrink-0 rounded-full', SEVERITY_BAR[notification.severity])}
+                    className={cn('mt-0.5 h-8 w-[3px] shrink-0 rounded-full', SEVERITY_BAR[notification.severity as Severity])}
                     title={formatSeverityLabel(notification.severity)}
                   />
                   <span className="min-w-0 flex-1">
@@ -189,7 +189,7 @@ export function NotificationCenter() {
                     </span>
                   </span>
                 </button>
-              ))
+              ))}
             )}
           </div>
         </div>
