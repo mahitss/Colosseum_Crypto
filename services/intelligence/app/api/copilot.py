@@ -1,5 +1,6 @@
 """API endpoints for Prophet Copilot."""
 
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -7,6 +8,8 @@ from pydantic import BaseModel, Field
 
 from app.agent.agent import CopilotAgent, create_agent
 from app.agent.prompts import SYSTEM_PROMPT
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -68,7 +71,8 @@ async def copilot_query(request: QueryRequest):
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
+        logger.error("copilot query failed", extra={"error": str(e)})
+        raise HTTPException(status_code=500, detail="Error processing query")
 
 
 @router.get("/v1/copilot/health")

@@ -30,6 +30,8 @@ package intelligence
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -245,4 +247,100 @@ func (r *Repository) InsertSignalEventsFromSignals(ctx context.Context, tx pgx.T
 		}
 	}
 	return inserted, nil
+}
+
+// LatestSignalsForMarkets returns the latest signal event for each of the given market UUIDs.
+func (r *Repository) LatestSignalsForMarkets(ctx context.Context, marketUUIDs []string) ([]SignalEvent, error) {
+	if len(marketUUIDs) == 0 {
+		return []SignalEvent{}, nil
+	}
+
+	// Use a CTE with ROW_NUMBER to get the latest signal per market
+	placeholders := make([]string, len(marketUUIDs))
+	args := make([]any, len(marketUUIDs))
+	for i, id := range marketUUIDs {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = id
+	}
+
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM (
+			SELECT %s,
+			       ROW_NUMBER() OVER (PARTITION BY se.market_id ORDER BY se.observed_at DESC, se.id DESC) as rn
+			FROM signal_events se
+			WHERE se.market_id IN (%s)
+		) sub
+		WHERE sub.rn = 1
+		ORDER BY sub.observed_at DESC, sub.id DESC
+	`, signalEventColumns, signalEventColumns, strings.Join(placeholders, ", "))
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	events := make([]SignalEvent, 0, len(marketUUIDs))
+	for rows.Next() {
+		event, err := scanSignalEvent(rows)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return events, nil
+}
+
+// LatestObservationsForMarkets returns the latest observation for each of the given market UUIDs.
+func (r *Repository) LatestObservationsForMarkets(ctx context.Context, marketUUIDs []string) ([]Observation, error) {
+	if len(marketUUIDs) == 0 {
+		return []Observation{}, nil
+	}
+
+	placeholders := make([]string, len(marketUUIDs))
+	args := make([]any, len(marketUUIDs))
+	for i, id := range marketUUIDs {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = id
+	}
+
+	query := fmt.Sprintf(`
+		SELECT mo.id, mo.market_id::text, mo.observed_at,
+		       mo.yes_probability::text, mo.no_probability::text,
+		       mo.volume_usdc::text, mo.liquidity::text
+		FROM (
+			SELECT *,
+			       ROW_NUMBER() OVER (PARTITION BY market_id ORDER BY observed_at DESC, id DESC) as rn
+			FROM market_observations
+			WHERE market_id IN (%s)
+		) sub
+		WHERE sub.rn = 1
+		ORDER BY sub.observed_at DESC
+	`, strings.Join(placeholders, ", "))
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	observations := make([]Observation, 0, len(marketUUIDs))
+	for rows.Next() {
+		var obs Observation
+		if err := rows.Scan(
+			&obs.ID, &obs.MarketID, &obs.Timestamp,
+			&obs.YesProbability, &obs.NoProbability, &obs.VolumeUSDC, &obs.Liquidity,
+		); err != nil {
+			return nil, err
+		}
+		observations = append(observations, obs)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return observations, nil
 }

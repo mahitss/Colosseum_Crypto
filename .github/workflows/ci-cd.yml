@@ -1,0 +1,431 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  GO_VERSION: '1.23'
+  PYTHON_VERSION: '3.13'
+  NODE_VERSION: '20'
+  RUST_VERSION: '1.81'
+
+jobs:
+  # Formatting and Linting
+  fmt-lint:
+    name: Format & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run gofmt
+        run: |
+          gofmt -l -e $(go list -f '{{.Dir}}' ./... | grep -v vendor) | grep -v "^$" && exit 1 || true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: ./services/gateway
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Python dependencies
+        run: |
+          cd services/intelligence
+          pip install -r requirements.txt
+          pip install ruff black
+
+      - name: Run ruff
+        run: |
+          cd services/intelligence
+          ruff check .
+
+      - name: Run black
+        run: |
+          cd services/intelligence
+          black --check .
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: Run ESLint
+        run: |
+          cd apps/web
+          npm run lint
+
+      - name: Run Prettier
+        run: |
+          cd apps/web
+          npx prettier --check .
+
+  # Type Checking
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Go vet
+        run: |
+          go vet ./services/gateway/...
+          go vet ./services/panta-adapter/...
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Python dependencies
+        run: |
+          cd services/intelligence
+          pip install -r requirements.txt
+          pip install mypy
+
+      - name: Run mypy
+        run: |
+          cd services/intelligence
+          mypy app
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: TypeScript typecheck
+        run: |
+          cd apps/web
+          npx tsc --noEmit
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Rust check
+        run: |
+          cd services/market-engine
+          cargo check --all-targets
+
+  # Unit Tests
+  test-go:
+    name: Go Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: prophet
+          POSTGRES_USER: prophet
+          POSTGRES_PASSWORD: prophet
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U prophet -d prophet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Run Go tests
+        run: |
+          go test ./services/gateway/... -v -race
+          go test ./services/panta-adapter/... -v
+
+  test-python:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: prophet
+          POSTGRES_USER: prophet
+          POSTGRES_PASSWORD: prophet
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U prophet -d prophet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: |
+          cd services/intelligence
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+      - name: Run tests
+        run: |
+          cd services/intelligence
+          python -m pytest -v
+
+  test-rust:
+    name: Rust Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+      - name: Run Rust tests
+        run: |
+          cd services/market-engine
+          cargo test --all-targets
+
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install dependencies
+        run: |
+          cd apps/web
+          npm ci
+      - name: Run tests
+        run: |
+          cd apps/web
+          npm test
+
+  test-contracts:
+    name: Foundry Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      - name: Run Forge tests
+        run: |
+          cd contracts/evm
+          forge test -vv
+
+  # Build Verification
+  build:
+    name: Build All Services
+    runs-on: ubuntu-latest
+    needs: [fmt-lint, typecheck, test-go, test-python, test-rust, test-frontend, test-contracts]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build Go services
+        run: |
+          go build ./services/gateway/...
+          go build ./services/panta-adapter/...
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Build Rust service
+        run: |
+          cd services/market-engine
+          cargo build --release
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Python compile check
+        run: |
+          cd services/intelligence
+          python -m compileall app
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: Build frontend
+        run: |
+          cd apps/web
+          npm run build
+
+  # Docker Build
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/gateway/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/prophet-gateway:${{ github.sha }}
+
+      - name: Build and push panta-adapter
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/panta-adapter/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/prophet-panta-adapter:${{ github.sha }}
+
+      - name: Build and push intelligence
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/intelligence/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/prophet-intelligence:${{ github.sha }}
+
+      - name: Build and push market-engine
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/market-engine/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/prophet-market-engine:${{ github.sha }}
+
+  # Security Scan
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Gosec
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec ./services/gateway/... ./services/panta-adapter/...
+
+      - name: Run npm audit
+        run: |
+          cd apps/web
+          npm audit --audit-level=high
+
+      - name: Run pip-audit
+        run: |
+          pip install pip-audit
+          cd services/intelligence
+          pip-audit -r requirements.txt
+
+  # Dependency Audit
+  deps-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Go vulnerability check
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./services/gateway/... ./services/panta-adapter/...
+
+      - name: Python dependency check
+        run: |
+          pip install safety
+          cd services/intelligence
+          safety check -r requirements.txt
+
+      - name: Rust dependency check
+        run: |
+          cd services/market-engine
+          cargo install cargo-audit
+          cargo audit
+
+      - name: npm audit
+        run: |
+          cd apps/web
+          npm audit --audit-level=high
+
+  # Deploy (manual trigger)
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, docker-build, security, deps-audit]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production..."
+          # Add your deployment steps here
+          # e.g., kubectl apply, docker-compose, etc.

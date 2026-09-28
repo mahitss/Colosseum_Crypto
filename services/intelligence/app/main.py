@@ -12,13 +12,15 @@ class HealthResponse(BaseModel):
 
 app = FastAPI(title=settings.app_name)
 
-# CORS middleware
+# CORS middleware - restricted to configured origins in production
+# In development, allow all origins for convenience
+allowed_origins = ["*"] if settings.environment == "development" else settings.cors_allowed_origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-Id"],
 )
 
 # Health endpoint

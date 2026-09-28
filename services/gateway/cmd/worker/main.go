@@ -93,7 +93,11 @@ const (
 	// ASCII bytes "PROPHETE" (0x50 'P', 0x52 'R', 0x4F 'O', 0x50 'P', 0x48 'H',
 	// 0x45 'E', 0x54 'T', 0x45 'E') so the constant is greppable and its intent
 	// is readable without a lookup table.
-	workerAdvisoryLockKey int64 = 0x50524F5048455445
+	//
+	// In production, this should be overridden via WORKER_ADVISORY_LOCK_KEY
+	// environment variable to prevent conflicts between deployments sharing a
+	// database (e.g., staging and prod).
+	defaultWorkerAdvisoryLockKey int64 = 0x50524F5048455445
 
 	// defaultSyncIntervalSeconds is the poll interval used when
 	// PROPHET_SYNC_INTERVAL_SECONDS is unset.
@@ -131,12 +135,13 @@ const (
 )
 
 type config struct {
-	databaseURL    string
-	adapterURL     string
-	enginePath     string
-	syncInterval   time.Duration
-	tickTimeout    time.Duration
-	bridgeLookback time.Duration
+	databaseURL         string
+	adapterURL          string
+	enginePath          string
+	syncInterval        time.Duration
+	tickTimeout         time.Duration
+	bridgeLookback      time.Duration
+	advisoryLockKey     int64
 }
 
 type tickStats struct {
@@ -186,7 +191,7 @@ func main() {
 		logger.Error("could not acquire a database connection for the worker lock", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
-	if err := acquireWorkerLock(startupCtx, lockConn, logger); err != nil {
+	if err := acquireWorkerLock(startupCtx, lockConn, logger, cfg.advisoryLockKey); err != nil {
 		lockConn.Release()
 		logger.Error("another worker already holds the advisory lock", slog.String("error", err.Error()))
 		os.Exit(1)
@@ -198,7 +203,7 @@ func main() {
 		// cancelled by this point in a signal-driven shutdown.
 		releaseCtx, cancelRelease := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancelRelease()
-		if _, err := lockConn.Exec(releaseCtx, `SELECT pg_advisory_unlock($1)`, workerAdvisoryLockKey); err != nil {
+		if _, err := lockConn.Exec(releaseCtx, `SELECT pg_advisory_unlock($1)`, cfg.advisoryLockKey); err != nil {
 			logger.Error("could not release the worker advisory lock", slog.String("error", err.Error()))
 		}
 		lockConn.Release()
@@ -232,7 +237,7 @@ func main() {
 		slog.Duration("tick_timeout", cfg.tickTimeout),
 		slog.Duration("bridge_lookback", cfg.bridgeLookback),
 		slog.Int("max_signals_per_tick", maxSignalsPerTick),
-		slog.Int64("advisory_lock_key", workerAdvisoryLockKey))
+		slog.Int64("advisory_lock_key", cfg.advisoryLockKey))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -528,15 +533,15 @@ func (w *worker) bridgeAndEvaluate(ctx context.Context, requestID string, stats 
 // acquireWorkerLock takes the single-instance advisory lock. pg_try_advisory_lock
 // returns false rather than blocking when someone else holds it, which is what
 // makes this a safe test instead of a silent queue behind the incumbent.
-func acquireWorkerLock(ctx context.Context, conn *pgxpool.Conn, logger *slog.Logger) error {
+func acquireWorkerLock(ctx context.Context, conn *pgxpool.Conn, logger *slog.Logger, lockKey int64) error {
 	var acquired bool
-	if err := conn.QueryRow(ctx, `SELECT pg_try_advisory_lock($1)`, workerAdvisoryLockKey).Scan(&acquired); err != nil {
+	if err := conn.QueryRow(ctx, `SELECT pg_try_advisory_lock($1)`, lockKey).Scan(&acquired); err != nil {
 		return err
 	}
 	if !acquired {
-		return fmt.Errorf("advisory lock %d is held by another worker", workerAdvisoryLockKey)
+		return fmt.Errorf("advisory lock %d is held by another worker", lockKey)
 	}
-	logger.Info("acquired the single-instance worker advisory lock", slog.Int64("advisory_lock_key", workerAdvisoryLockKey))
+	logger.Info("acquired the single-instance worker advisory lock", slog.Int64("advisory_lock_key", lockKey))
 	return nil
 }
 
@@ -575,6 +580,19 @@ func loadConfig(logger *slog.Logger) (config, error) {
 			slog.String("consequence", "no signals would be produced, so no alerts would ever fire"),
 			slog.String("path", cfg.enginePath))
 		return config{}, fmt.Errorf("MARKET_ENGINE_BIN %q is not an executable file", cfg.enginePath)
+	}
+
+	// Advisory lock key - configurable to prevent conflicts between deployments
+	// sharing the same database (e.g., staging and prod).
+	lockKeyRaw := strings.TrimSpace(os.Getenv("WORKER_ADVISORY_LOCK_KEY"))
+	if lockKeyRaw == "" {
+		cfg.advisoryLockKey = defaultWorkerAdvisoryLockKey
+	} else {
+		parsed, err := strconv.ParseInt(lockKeyRaw, 0, 64)
+		if err != nil {
+			return config{}, fmt.Errorf("WORKER_ADVISORY_LOCK_KEY must be a valid int64: %w", err)
+		}
+		cfg.advisoryLockKey = parsed
 	}
 
 	seconds, err := syncIntervalSeconds()

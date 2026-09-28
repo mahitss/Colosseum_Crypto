@@ -1,0 +1,172 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: prophet-postgres
+    environment:
+      POSTGRES_DB: prophet
+      POSTGRES_USER: prophet
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prophet -d prophet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  redis:
+    image: redis:7-alpine
+    container_name: prophet-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: prophet-gateway
+    environment:
+      PORT: "8080"
+      PANTA_ADAPTER_URL: http://panta-adapter:8081
+      DATABASE_URL: postgres://prophet:${POSTGRES_PASSWORD}@postgres:5432/prophet?sslmode=disable
+      PANTA_API_URL: ${PANTA_API_URL}
+      PANTA_API_KEY: ${PANTA_API_KEY}
+      SOLANA_RPC_URL: ${SOLANA_RPC_URL}
+      INTELLIGENCE_SERVICE_URL: http://intelligence:8001
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRY: ${JWT_EXPIRY:-24h}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-prophet-api}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      panta-adapter:
+        condition: service_healthy
+      intelligence:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    restart: unless-stopped
+
+  panta-adapter:
+    build:
+      context: .
+      dockerfile: services/panta-adapter/Dockerfile
+    container_name: prophet-panta-adapter
+    environment:
+      PANTA_API_BASE_URL: ${PANTA_API_BASE_URL:-https://live-api.panta.market/api/v1/}
+      PANTA_API_KEY: ${PANTA_API_KEY}
+      PANTA_API_TIMEOUT_SECONDS: "10"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+    restart: unless-stopped
+
+  intelligence:
+    build:
+      context: .
+      dockerfile: services/intelligence/Dockerfile
+    container_name: prophet-intelligence
+    environment:
+      APP_ENV: production
+      PORT: "8001"
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      AI_API_KEY: ${AI_API_KEY}
+      DATABASE_URL: postgres://prophet:${POSTGRES_PASSWORD}@postgres:5432/prophet?sslmode=disable
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    restart: unless-stopped
+
+  market-engine:
+    build:
+      context: .
+      dockerfile: services/market-engine/Dockerfile
+    container_name: prophet-market-engine
+    environment:
+      RUST_LOG: info
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: prophet-worker
+    command: ["./worker"]
+    environment:
+      DATABASE_URL: postgres://prophet:${POSTGRES_PASSWORD}@postgres:5432/prophet?sslmode=disable
+      PANTA_ADAPTER_URL: http://panta-adapter:8081
+      MARKET_ENGINE_BIN: /app/market-engine
+      PROPHET_SYNC_INTERVAL_SECONDS: "300"
+      WORKER_ADVISORY_LOCK_KEY: "0x50524F5048455445"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      panta-adapter:
+        condition: service_healthy
+      market-engine:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: prophet-network

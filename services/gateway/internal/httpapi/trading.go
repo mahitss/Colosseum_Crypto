@@ -5,8 +5,23 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
+	"prophet/gateway/internal/ratelimit"
 	"prophet/gateway/internal/trading"
+)
+
+// Rate limiters for trading endpoints (stricter for expensive operations)
+var (
+	tradesQuoteLimiter     = ratelimit.NewSlidingWindowLog(30, time.Minute)     // 30 req/min
+	tradesBuildLimiter     = ratelimit.NewSlidingWindowLog(30, time.Minute)     // 30 req/min
+	tradesBroadcastLimiter = ratelimit.NewSlidingWindowLog(20, time.Minute)     // 20 req/min
+	tradesConfirmLimiter   = ratelimit.NewSlidingWindowLog(60, time.Minute)     // 60 req/min
+	tradesReportLimiter    = ratelimit.NewSlidingWindowLog(20, time.Minute)     // 20 req/min
+	tradesCompleteLimiter  = ratelimit.NewSlidingWindowLog(20, time.Minute)     // 20 req/min
+	tradesPositionsLimiter = ratelimit.NewSlidingWindowLog(30, time.Minute)     // 30 req/min
+	tradesAttemptLimiter   = ratelimit.NewSlidingWindowLog(60, time.Minute)     // 60 req/min
+	tradesValidateLimiter  = ratelimit.NewSlidingWindowLog(60, time.Minute)     // 60 req/min
 )
 
 // TradeService is the interface the HTTP layer depends on.
@@ -120,7 +135,7 @@ func registerTradingRoutes(mux *http.ServeMux, trades TradeService) {
 		return
 	}
 
-	mux.HandleFunc("POST /api/v1/trades/quote", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/trades/quote", ratelimitMiddleware(tradesQuoteLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req quoteRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			w.Header().Set("Content-Type", "application/json")
@@ -146,9 +161,9 @@ func registerTradingRoutes(mux *http.ServeMux, trades TradeService) {
 			"expires_at":       quote.ExpiresAt,
 			"trade_attempt_id": attempt.ID,
 		})
-	})
+	}))
 
-	mux.HandleFunc("POST /api/v1/trades/build", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/trades/build", ratelimitMiddleware(tradesBuildLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req buildRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			w.Header().Set("Content-Type", "application/json")
@@ -170,9 +185,9 @@ func registerTradingRoutes(mux *http.ServeMux, trades TradeService) {
 			"build_reference":  build.BuildReference,
 			"message_format":   build.MessageFormat,
 		})
-	})
+	}))
 
-	mux.HandleFunc("POST /api/v1/trades/broadcast", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/trades/broadcast", ratelimitMiddleware(tradesBroadcastLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req broadcastRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			w.Header().Set("Content-Type", "application/json")
@@ -191,9 +206,9 @@ func registerTradingRoutes(mux *http.ServeMux, trades TradeService) {
 			"signature": result.Signature,
 			"status":    "SUBMITTED",
 		})
-	})
+	}))
 
-	mux.HandleFunc("POST /api/v1/trades/validate", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/trades/validate", ratelimitMiddleware(tradesValidateLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req validateRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			w.Header().Set("Content-Type", "application/json")
@@ -216,9 +231,9 @@ func registerTradingRoutes(mux *http.ServeMux, trades TradeService) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(map[string]any{"valid": true})
-	})
+	}))
 
-	mux.HandleFunc("POST /api/v1/trades/confirm", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/trades/confirm", ratelimitMiddleware(tradesConfirmLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req reportRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			w.Header().Set("Content-Type", "application/json")
@@ -240,9 +255,9 @@ func registerTradingRoutes(mux *http.ServeMux, trades TradeService) {
 			"status":           "CONFIRMED",
 			"trade_attempt_id": req.TradeAttemptID,
 		})
-	})
+	}))
 
-	mux.HandleFunc("POST /api/v1/trades/report", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/trades/report", ratelimitMiddleware(tradesReportLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req reportRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			w.Header().Set("Content-Type", "application/json")
@@ -262,9 +277,9 @@ func registerTradingRoutes(mux *http.ServeMux, trades TradeService) {
 			"panta_reference":  reference,
 			"trade_attempt_id": req.TradeAttemptID,
 		})
-	})
+	}))
 
-	mux.HandleFunc("POST /api/v1/trades/complete", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/trades/complete", ratelimitMiddleware(tradesCompleteLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req reportRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			w.Header().Set("Content-Type", "application/json")
@@ -279,9 +294,9 @@ func registerTradingRoutes(mux *http.ServeMux, trades TradeService) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(map[string]any{"status": "COMPLETED", "trade_attempt_id": req.TradeAttemptID})
-	})
+	}))
 
-	mux.HandleFunc("GET /api/v1/trades/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v1/trades/{id}", ratelimitMiddleware(tradesAttemptLimiter, func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		attempt, err := trades.GetAttempt(r.Context(), id)
 		if err != nil {
@@ -297,9 +312,9 @@ func registerTradingRoutes(mux *http.ServeMux, trades TradeService) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(toAttemptDTO(attempt))
-	})
+	}))
 
-	mux.HandleFunc("GET /api/v1/trades/positions/{wallet}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v1/trades/positions/{wallet}", ratelimitMiddleware(tradesPositionsLimiter, func(w http.ResponseWriter, r *http.Request) {
 		wallet := r.PathValue("wallet")
 		positions, err := trades.RefreshPositions(r.Context(), wallet)
 		if err != nil {
@@ -309,5 +324,5 @@ func registerTradingRoutes(mux *http.ServeMux, trades TradeService) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(map[string]any{"positions": positions})
-	})
+	}))
 }

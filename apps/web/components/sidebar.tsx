@@ -12,17 +12,19 @@ import {
   Bot,
   PenTool,
   Settings,
+  BellRing,
   Activity,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Command Center', icon: LayoutDashboard },
   { href: '/markets', label: 'Markets', icon: TrendingUp },
-  { href: '/signals', label: 'Signals', icon: Signal },
+  { href: '/signals', label: 'Signal Radar', icon: Signal },
   { href: '/watchlists', label: 'Watchlists', icon: Bookmark },
   { href: '/portfolio', label: 'Portfolio', icon: Wallet },
   { href: '/copilot', label: 'AI Copilot', icon: Bot },
   { href: '/studio', label: 'Market Studio', icon: PenTool },
+  { href: '/settings/alerts', label: 'Alerts', icon: BellRing },
 ];
 
 const bottomNavItems = [

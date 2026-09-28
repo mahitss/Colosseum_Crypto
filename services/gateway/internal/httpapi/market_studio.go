@@ -6,8 +6,10 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"prophet/gateway/internal/marketstudio"
+	"prophet/gateway/internal/ratelimit"
 )
 
 // MarketStudioService is the interface the HTTP layer depends on.
@@ -152,6 +154,17 @@ func writeMarketStudioError(w http.ResponseWriter, err error, attempt *marketstu
 	writeJSONResponse(w, marketStudioStatus(code), payload)
 }
 
+// Rate limit configs for market studio endpoints (stricter for expensive operations)
+var (
+	marketStudioInterpretLimiter = ratelimit.NewSlidingWindowLog(10, time.Minute)     // 10 req/min
+	marketStudioQuoteLimiter     = ratelimit.NewSlidingWindowLog(20, time.Minute)     // 20 req/min
+	marketStudioBuildLimiter     = ratelimit.NewSlidingWindowLog(20, time.Minute)     // 20 req/min
+	marketStudioBroadcastLimiter = ratelimit.NewSlidingWindowLog(10, time.Minute)     // 10 req/min
+	marketStudioRegisterLimiter  = ratelimit.NewSlidingWindowLog(10, time.Minute)     // 10 req/min
+	marketStudioValidateLimiter  = ratelimit.NewSlidingWindowLog(50, time.Minute)     // 50 req/min
+	marketStudioAttemptsLimiter  = ratelimit.NewSlidingWindowLog(60, time.Minute)     // 60 req/min
+)
+
 func registerMarketStudioRoutes(mux *http.ServeMux, service MarketStudioService, interpreter marketstudio.Interpreter) {
 	if service == nil {
 		return
@@ -159,7 +172,7 @@ func registerMarketStudioRoutes(mux *http.ServeMux, service MarketStudioService,
 
 	// Interpret turns a description into a draft, or asks for clarification.
 	// It never creates anything.
-	mux.HandleFunc("POST /api/v1/market-studio/interpret", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/market-studio/interpret", ratelimitMiddleware(marketStudioInterpretLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			Prompt string `json:"prompt"`
 		}
@@ -187,11 +200,11 @@ func registerMarketStudioRoutes(mux *http.ServeMux, service MarketStudioService,
 			"validation":          result.Validation,
 			"used_fallback":       result.UsedFallback,
 		})
-	})
+	}))
 
 	// Validate is the deterministic gate. The client uses this to decide whether
 	// to show a Create Market action; it is never skipped.
-	mux.HandleFunc("POST /api/v1/market-studio/validate", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/market-studio/validate", ratelimitMiddleware(marketStudioValidateLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req marketStudioDraftRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeJSONResponse(w, http.StatusBadRequest, marketStudioErrorResponse{Error: "INVALID_REQUEST"})
@@ -199,9 +212,9 @@ func registerMarketStudioRoutes(mux *http.ServeMux, service MarketStudioService,
 		}
 		report := service.Validate(req.Draft)
 		writeJSONResponse(w, http.StatusOK, report)
-	})
+	}))
 
-	mux.HandleFunc("POST /api/v1/market-studio/quote", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/market-studio/quote", ratelimitMiddleware(marketStudioQuoteLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req marketStudioQuoteRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeJSONResponse(w, http.StatusBadRequest, marketStudioErrorResponse{Error: "INVALID_REQUEST"})
@@ -224,10 +237,10 @@ func registerMarketStudioRoutes(mux *http.ServeMux, service MarketStudioService,
 			"quote":      result.Quote,
 			"validation": result.Report,
 		})
-	})
+	}))
 
 	// Build returns an unsigned transaction. This server never signs it.
-	mux.HandleFunc("POST /api/v1/market-studio/build", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/market-studio/build", ratelimitMiddleware(marketStudioBuildLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req marketStudioBuildRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeJSONResponse(w, http.StatusBadRequest, marketStudioErrorResponse{Error: "INVALID_REQUEST"})
@@ -242,10 +255,10 @@ func registerMarketStudioRoutes(mux *http.ServeMux, service MarketStudioService,
 			"attempt": toMarketStudioAttemptDTO(result.Attempt),
 			"build":   result.Build,
 		})
-	})
+	}))
 
 	// Broadcast relays the wallet-signed transaction and waits for confirmation.
-	mux.HandleFunc("POST /api/v1/market-studio/broadcast", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/market-studio/broadcast", ratelimitMiddleware(marketStudioBroadcastLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req marketStudioBroadcastRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeJSONResponse(w, http.StatusBadRequest, marketStudioErrorResponse{Error: "INVALID_REQUEST"})
@@ -269,10 +282,10 @@ func registerMarketStudioRoutes(mux *http.ServeMux, service MarketStudioService,
 			"attempt": toMarketStudioAttemptDTO(result.Attempt),
 			"result":  result.Result,
 		})
-	})
+	}))
 
 	// Register is the only step that makes a market exist.
-	mux.HandleFunc("POST /api/v1/market-studio/register", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/market-studio/register", ratelimitMiddleware(marketStudioRegisterLimiter, func(w http.ResponseWriter, r *http.Request) {
 		var req marketStudioRegisterRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeJSONResponse(w, http.StatusBadRequest, marketStudioErrorResponse{Error: "INVALID_REQUEST"})
@@ -292,10 +305,10 @@ func registerMarketStudioRoutes(mux *http.ServeMux, service MarketStudioService,
 			"message":    result.Message,
 			"attempt":    toMarketStudioAttemptDTO(result.Attempt),
 		})
-	})
+	}))
 
 	// Attempts status endpoint, for polling after a broadcast or registration.
-	mux.HandleFunc("GET /api/v1/market-studio/attempts/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v1/market-studio/attempts/{id}", ratelimitMiddleware(marketStudioAttemptsLimiter, func(w http.ResponseWriter, r *http.Request) {
 		id := strings.TrimSpace(r.PathValue("id"))
 		if id == "" {
 			writeJSONResponse(w, http.StatusBadRequest, marketStudioErrorResponse{Error: "INVALID_REQUEST"})
@@ -311,5 +324,5 @@ func registerMarketStudioRoutes(mux *http.ServeMux, service MarketStudioService,
 			return
 		}
 		writeJSONResponse(w, http.StatusOK, toMarketStudioAttemptDTO(attempt))
-	})
+	}))
 }

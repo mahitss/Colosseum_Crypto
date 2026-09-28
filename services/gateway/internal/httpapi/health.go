@@ -4,16 +4,36 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"prophet/gateway/internal/marketstudio"
 	"prophet/gateway/internal/requestid"
 	"prophet/types"
 )
 
+const (
+	// maxRequestBodySize limits the request body to 1MB to prevent DoS via large payloads.
+	maxRequestBodySize = 1 << 20
+)
+
 type healthResponse struct {
 	Status string `json:"status"`
+}
+
+type readinessResponse struct {
+	Status    string            `json:"status"`
+	Checks    map[string]string `json:"checks"`
+	Timestamp string            `json:"timestamp"`
+}
+
+var readinessChecks []func() error
+
+// RegisterReadinessCheck allows services to register dependency checks for /health/ready
+func RegisterReadinessCheck(name string, check func() error) {
+	readinessChecks = append(readinessChecks, check)
 }
 
 func NewHandler() http.Handler {
@@ -57,6 +77,9 @@ func NewHandlerWithAllServices(
 // RegisterUserResolver. The alert, notification and watchlist-scoped radar
 // handlers resolve identity through that same seam rather than through a
 // resolver passed at mount time, so a deployment installs its provider once.
+// NewHandlerWithEnterprise wires every route group the gateway serves, including
+// the user-owned enterprise surface introduced by TASK 008: watchlists, the
+// signal radar, alert rules, and the notification inbox.
 func NewHandlerWithEnterprise(
 	service marketService,
 	intelligence intelligenceReader,
@@ -69,11 +92,18 @@ func NewHandlerWithEnterprise(
 	notifications notificationService,
 ) http.Handler {
 	mux := http.NewServeMux()
+	// /health for backwards compatibility, /health/live for kubernetes liveness probe
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(healthResponse{Status: "ok"})
 	})
+	mux.HandleFunc("GET /health/live", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(healthResponse{Status: "ok"})
+	})
+	mux.HandleFunc("GET /health/ready", handleReadiness)
 	registerMarketRoutes(mux, service)
 	registerIntelligenceRoutes(mux, intelligence)
 	registerCopilotRoutes(mux)
@@ -85,7 +115,33 @@ func NewHandlerWithEnterprise(
 	RegisterRadarRoutes(mux, radar)
 	RegisterAlertRoutes(mux, alerts)
 	RegisterNotificationRoutes(mux, notifications)
-	return withRequestID(mux)
+	return withRequestID(withBodyLimit(mux))
+}
+
+func handleReadiness(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	checks := make(map[string]string)
+	allHealthy := true
+	for _, check := range readinessChecks {
+		if err := check(); err != nil {
+			checks["check"] = "failed: " + err.Error()
+			allHealthy = false
+		} else {
+			checks["check"] = "ok"
+		}
+	}
+	status := "ready"
+	statusCode := http.StatusOK
+	if !allHealthy {
+		status = "not ready"
+		statusCode = http.StatusServiceUnavailable
+	}
+	_ = json.NewEncoder(w).Encode(readinessResponse{
+		Status:    status,
+		Checks:    checks,
+		Timestamp: time.Now().UTC().Format(time.RFC3339Nano),
+	})
+	w.WriteHeader(statusCode)
 }
 
 func withRequestID(next http.Handler) http.Handler {
@@ -101,6 +157,14 @@ func withRequestID(next http.Handler) http.Handler {
 		}
 		w.Header().Set("X-Request-Id", requestID)
 		next.ServeHTTP(w, r.WithContext(requestid.With(r.Context(), requestID)))
+	})
+}
+
+// withBodyLimit wraps the handler to enforce a maximum request body size.
+func withBodyLimit(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = io.NopCloser(io.LimitReader(r.Body, maxRequestBodySize))
+		next.ServeHTTP(w, r)
 	})
 }
 

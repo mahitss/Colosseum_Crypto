@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"prophet/gateway/internal/auth"
 	"prophet/gateway/internal/httpapi"
 	"prophet/gateway/internal/intelligence"
 	"prophet/gateway/internal/markets"
@@ -21,6 +22,17 @@ import (
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	logger.Info("gateway starting")
+
+	// Load JWT configuration
+	jwtConfig, err := auth.LoadConfig()
+	if err != nil {
+		logger.Error("failed to load JWT config", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
+	// Create JWT user resolver and register it
+	jwtResolver := auth.NewJWTUserResolver(jwtConfig, logger)
+	httpapi.RegisterUserResolver(jwtResolver)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -149,19 +161,24 @@ func main() {
 
 	logger.Info("gateway listening", slog.String("address", addr))
 
+	// Build the handler chain: AuthMiddleware -> RequestID -> Routes
+	baseHandler := httpapi.NewHandlerWithEnterprise(
+		adapterClient,
+		repository,
+		tradeHandler,
+		studioHandler,
+		studioInterpreter,
+		enterprise,
+		enterprise,
+		enterprise,
+		enterprise,
+	)
+	// Wrap with auth middleware (validates JWT, sets user context)
+	authenticatedHandler := auth.AuthMiddleware(jwtConfig, logger, baseHandler)
+
 	server := &http.Server{
-		Addr: addr,
-		Handler: httpapi.NewHandlerWithEnterprise(
-			adapterClient,
-			repository,
-			tradeHandler,
-			studioHandler,
-			studioInterpreter,
-			enterprise,
-			enterprise,
-			enterprise,
-			enterprise,
-		),
+		Addr:              addr,
+		Handler:           authenticatedHandler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	shutdown, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

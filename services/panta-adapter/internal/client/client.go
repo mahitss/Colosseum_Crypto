@@ -49,6 +49,7 @@ type Client struct {
 	baseBackoff time.Duration
 	maxBackoff  time.Duration
 	sleep       func(context.Context, time.Duration) error
+	circuitBreaker *CircuitBreaker
 }
 
 type requestIDKey struct{}
@@ -115,6 +116,12 @@ func New(baseURL, apiKey string, timeout time.Duration, options Options) (*Clien
 		baseURL: parsed, apiKey: apiKey, timeout: timeout, httpClient: httpClient,
 		logger: logger, maxAttempts: maxAttempts, baseBackoff: baseBackoff,
 		maxBackoff: maxBackoff, sleep: sleep,
+		circuitBreaker: NewCircuitBreaker(CircuitBreakerConfig{
+			FailureThreshold: 5,
+			SuccessThreshold: 2,
+			Timeout:          30 * time.Second,
+			MaxConcurrent:    50,
+		}),
 	}, nil
 }
 

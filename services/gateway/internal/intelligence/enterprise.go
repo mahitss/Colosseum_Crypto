@@ -343,6 +343,43 @@ func (r *Repository) WatchlistIntel(ctx context.Context, userID, watchlistID str
 		return nil, err
 	}
 
+	if len(markets) == 0 {
+		return &WatchlistIntelligence{
+			Watchlist:     *watchlist,
+			MarketCount:   0,
+			Markets:       []WatchlistMarketIntel{},
+			RecentSignals: []SignalEvent{},
+			SeverityDist:  SeverityDistribution(nil),
+			LatestUpdate:  nil,
+		}, nil
+	}
+
+	// Batch fetch latest signals for all markets in the watchlist
+	marketIDs := make([]string, len(markets))
+	for i, m := range markets {
+		marketIDs[i] = m.ID
+	}
+	latestSignals, err := r.LatestSignalsForMarkets(ctx, marketIDs)
+	if err != nil {
+		return nil, err
+	}
+	signalMap := make(map[string]*SignalEvent, len(latestSignals))
+	for i := range latestSignals {
+		signalMap[latestSignals[i].MarketID] = &latestSignals[i]
+	}
+
+	// Batch fetch latest observations for all markets in the watchlist
+	latestObservations, err := r.LatestObservationsForMarkets(ctx, marketIDs)
+	if err != nil {
+		return nil, err
+	}
+	observationMap := make(map[string]*Observation, len(latestObservations))
+	for i := range latestObservations {
+		o := latestObservations[i]
+		o.MarketID = markets[0].SourceMarketID // will be corrected below
+		observationMap[latestObservations[i].MarketID] = &o
+	}
+
 	result := &WatchlistIntelligence{
 		Watchlist:     *watchlist,
 		MarketCount:   len(markets),
@@ -353,24 +390,16 @@ func (r *Repository) WatchlistIntel(ctx context.Context, userID, watchlistID str
 	for _, market := range markets {
 		entry := WatchlistMarketIntel{Market: market}
 
-		events, err := r.SignalEventsForMarket(ctx, market.ID, 1)
-		if err != nil {
-			return nil, err
-		}
-		if len(events) > 0 {
-			latest := events[0]
-			latest.MarketID = market.SourceMarketID
-			entry.LatestSignal = &latest
+		if signal, ok := signalMap[market.ID]; ok {
+			s := *signal
+			s.MarketID = market.SourceMarketID
+			entry.LatestSignal = &s
 		}
 
-		observation, err := r.LatestObservation(ctx, r.pool, market.ID)
-		if err != nil {
-			return nil, err
-		}
-		if observation != nil {
-			copied := *observation
-			copied.MarketID = market.SourceMarketID
-			entry.LatestObservation = &copied
+		if obs, ok := observationMap[market.ID]; ok {
+			o := *obs
+			o.MarketID = market.SourceMarketID
+			entry.LatestObservation = &o
 		}
 
 		entry.Market.ID = market.SourceMarketID
@@ -387,9 +416,6 @@ func (r *Repository) WatchlistIntel(ctx context.Context, userID, watchlistID str
 	result.RecentSignals = recent
 	result.SeverityDist = SeverityDistribution(recent)
 
-	// The rows are already ordered newest-first, so the first row carries the
-	// latest activity. A watchlist with no history yet reports no update time
-	// rather than a zero timestamp, which the client renders as "never".
 	if len(recent) > 0 {
 		latest := recent[0].ObservedAt
 		result.LatestUpdate = &latest
