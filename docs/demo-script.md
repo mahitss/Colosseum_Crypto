@@ -1,8 +1,8 @@
-# Prophet — Demo Script (Click-by-Click)
+# Prophet — Demo Script
 
 ## Demo Overview
-**Duration:** ~10 minutes  
-**Audience:** Technical judges, investors, potential users  
+**Duration:** ~3 minutes  
+**Target Audience:** Technical judges, investors, potential users  
 **Core Message:** "Prophet turns prediction-market noise into structured intelligence — with deterministic signals, grounded AI, and human-controlled trading."
 
 ---
@@ -33,13 +33,13 @@ cd services/gateway && go run ./cmd/worker
 cd apps/web && npm run dev
 ```
 
-### Environment
+### Environment Variables
 ```bash
 export DATABASE_URL="postgresql://prophet:prophet@localhost:5432/prophet"
-export PANTA_API_KEY="your-panta-key"
+export PANTA_API_KEY="your-panta-api-key"
 export PANTA_API_BASE_URL="https://live-api.panta.market/api/v1/"
 export SOLANA_RPC_URL="https://api.mainnet-beta.solana.com"
-export AI_API_KEY="sk-..."
+export AI_API_KEY="your-openai-key"
 export JWT_SECRET="$(openssl rand -hex 32)"
 export MARKET_ENGINE_BIN="./services/market-engine/target/release/market-engine"
 ```
@@ -52,29 +52,41 @@ curl -f http://localhost:8081/health
 curl -f http://localhost:8001/health
 ```
 
-### Wallet Setup
+### Wallet
 - Phantom or Solflare installed
 - Connected to Mainnet
 - SOL for fees, USDC for trading
 
----
-
-## Demo Script (10 minutes)
-
-### 0. Opening (30s)
-**Say:** "Prophet turns prediction-market noise into structured intelligence. Panta provides the markets; Prophet provides the intelligence layer — deterministic signals, grounded AI, human-controlled trading."
-
-**Action:** Open http://localhost:3000 → Command Center loads
+### Browser
+- Chrome/Edge/Firefox latest
+- DevTools closed (or docked)
+- Single tab open to `http://localhost:3000`
+- No other Prophet tabs open
 
 ---
 
-### 1. Command Center (60s)
+## Demo Script (3–5 minutes)
+
+### 0:00 — OPEN COMMAND CENTER
+**Action:** Open `http://localhost:3000`
+
+**Say:** "Prophet is designed to answer one question: What does the market think happens next?"
+
+**Show:**
+- Page loads at `/` (Command Center)
+- 4 KPI cards: Markets Tracked, Active Signals, Significant Changes, Markets Updated
+- "Live" pulse indicator in top-right
+- Signal Radar table with recent signals from Panta
+
+---
+
+### 0:20 — SHOW MARKET OVERVIEW
 **Action:** Page loads at `/`
 
 **Show:**
-- Header: "Command Center" + "Live" pulse indicator
+- Header: "Command Center" + "Prediction-market intelligence across the Panta ecosystem."
 - 4 KPI cards: Markets Tracked, Active Signals, Significant Changes, Markets Updated
-- Signal Radar table below with real signals
+- Signal Radar table with real signals from Panta
 
 **Say:** "This is the Command Center. Four KPIs — markets tracked, active signals, significant changes, last update. Below: live Signal Radar with real Panta data. Every row is a deterministic signal from our Rust engine."
 
@@ -82,16 +94,30 @@ curl -f http://localhost:8001/health
 
 ---
 
-### 2. Market Detail (90s)
+### 0:45 — OPEN SIGNAL RADAR
+**Action:** Click "Signals" in sidebar → `/signals`
+
+**Show:**
+- Severity tabs: All / Critical / Significant / Watch / Info
+- Filters: Market ID, Signal Type, Watchlist, Time Range
+- Table with: Time, Severity bar, Market, Signal Type, Explanation, YES%, Time
+
+**Say:** "This is the Signal Radar. Every row is a deterministic signal from our Rust engine — fixed-point arithmetic, 12 decimal places, no floating point. Severity tabs use minimum-severity semantics: 'Significant' shows Significant AND Critical. Keyset pagination means stable scrolling even as new signals land."
+
+**Click:** Any row → navigates to Market Detail
+
+---
+
+### 1:15 — OPEN MARKET DETAIL
 **Action:** Click a signal row → `/markets/{id}`
 
 **Show:**
 - Header: Title, status badge, category, close date
-- 4 metric cards: YES%, NO%, Volume, Liquidity (tabular numbers)
+- 4 metric cards: YES%, NO%, Volume, Liquidity
 - Trade Ticket (collapsed)
 - Probability Chart (placeholder)
-- Signal Timeline — expandable rows with severity badges
-- Market Metadata (ID, source, phase, resolution status, created date)
+- Signal Timeline with severity badges
+- Market Metadata
 
 **Say:** "Every market shows real Panta data. The signal timeline shows deterministic signals from our Rust engine — fixed-point arithmetic, 12 decimal places, no floating point. Click any signal to see the explanation."
 
@@ -101,102 +127,54 @@ curl -f http://localhost:8001/health
 
 ---
 
-### 3. Signal Radar (60s)
-**Navigate to:** `/signals` (or click "Signal Radar" in sidebar)
-
-**Show:**
-- Header with severity tabs: All / Critical / Significant / Watch / Info
-- Filter bar: Market ID, Signal Type, Watchlist, Time Range
-- Live refresh indicator (15s)
-- Table with: Time, Severity bar, Market, Signal Type, Explanation, YES%, Time
-
-**Demonstrate:**
-1. Click "Critical" tab → filters to Critical only
-2. Type market ID in search → filters to that market
-3. Change time range to "Last 24h"
-4. Click a row → navigates to Market Detail
-
-**Say:** "Every filter is server-side. The severity tabs use minimum-severity semantics — 'Significant' shows Significant AND Critical. Keyset pagination means stable scrolling even as new signals arrive."
-
----
-
-### 4. Watchlists (60s)
-**Navigate to:** `/watchlists`
-
-**Show:**
-- Empty state or existing watchlists
-- Click "Create Watchlist" → name "My Crypto Watchlist"
-- Click the watchlist → detail view
-- Show empty state → "Add markets"
-
-**Navigate to:** `/markets` → Search "Bitcoin" → Click "Add to Watchlist" → Select "Demo Watchlist"
-
-**Back to:** `/watchlists` → Click the watchlist → Shows market with latest signal + severity
-
-**Say:** "Watchlists scope alerts. You only get alerts for markets you care about."
-
----
-
-### 5. Alerts (60s)
-**Navigate to:** `/settings/alerts`
-
-**Show:**
-- Empty state or existing rules
-- Click "Create Alert Rule"
-- Fill form:
-  - Name: "Big Probability Shifts"
-  - Scope: "My Crypto Watchlist" (dropdown)
-  - Signal Type: "Probability Shift"
-  - Minimum Severity: "Significant"
-  - Probability Change Threshold: "10" (percentage points)
-  - Cooldown: "3600" (1 hour)
-- Save → Rule appears in list
-- Click "Alert Events" tab → empty (no events yet)
-
-**Say:** "Alerts are deterministic. Cooldown prevents spam. Dedupe keys prevent duplicates. If Panta registration fails after Solana confirms, we show 'Registration pending' — never 'failed'."
-
----
-
-### 6. AI Copilot (60s)
+### 1:45 — AI COPILOT
 **Navigate to:** `/copilot`
 
 **Show:**
-- Suggested prompts buttons
+- Suggested prompts
 - Type: "What changed significantly today?"
-- Send → Shows thinking animation → Response with source citations
-- Click a source badge → Opens Market Detail
-- Ask: "Which markets moved the most today?"
-- Response with market links
-- Ask: "Explain the biggest signal today"
-- Shows deterministic explanation
+- Response with source citations
+- Click source badge → navigates to Market Detail
 
 **Say:** "Every AI response cites sources — markets, signals, observations. No invented numbers. If data is missing, it says so."
 
 ---
 
-### 6. Market Studio (90s)
+### 2:15 — WATCHLISTS
+**Navigate to:** `/watchlists`
+
+**Show:**
+- Create "Test Watchlist"
+- Add markets from Markets page
+- View watchlist detail with severity distribution bar
+
+**Say:** "Watchlists scope alerts. You only get alerts for markets you care about."
+
+---
+
+### 6. ALERTS (60s)
+**Navigate to:** `/settings/alerts`
+
+**Show:**
+- Create rule: "Big Moves" on "My Watchlist", Probability Shift, 10pp threshold
+- Show rule in list
+- Check Alert Events tab (empty initially)
+
+**Say:** "Alerts are deterministic. Cooldown prevents spam. Dedupe keys prevent duplicates. If Panta registration fails after Solana confirms, we show 'Registration pending' — never 'failed'."
+
+---
+
+### 7. MARKET STUDIO (90s)
 **Navigate to:** `/studio`
 
-**Step 1 — Describe:**
-- Type: "Will Bitcoin exceed $150,000 before December 31, 2026, according to CoinGecko?"
-- Click "Draft my market"
-- AI returns draft with clarification questions if needed
+**Step 1 — Describe:** Type "Will Bitcoin exceed $150,000 before December 31, 2026?" → Click "Draft my market"
 
-**Step 2-4:** Review Draft → Resolution Rules
+**Step 2-4:** Draft → Resolution → Validate
 - Show draft fields editable
-- Resolution criteria: "Bitcoin daily close > $150,000 on Dec 31, 2026"
-- Add source: "https://www.coingecko.com/en/coins/bitcoin"
-- Check "I confirm this resolution source"
+- Resolution criteria + source confirmation checkbox
+- Validate → green checkmarks + warnings
 
-**Step 5 — Validate:**
-- Click "Re-run validation"
-- Shows green checkmarks + any warnings
-- Click "I have reviewed this market"
-
-**Step 6 — Quote:**
-- Connect wallet (Phantom)
-- Click "Get Quote"
-- Show fee breakdown in USDC base units (integer strings)
+**Step 6 — Quote:** Connect wallet → "Get Quote" → fee breakdown in USDC base units
 
 **Step 7 — Build & Sign:**
 - Click "Build & Sign in Wallet"
@@ -207,22 +185,14 @@ curl -f http://localhost:8001/health
 
 ---
 
-### 7. System Status (30s)
-Navigate to `/settings` → Click "System Status" card → `/system-status`
+### 3:10 — SYSTEM STATUS
+Navigate to `/settings` → Click "System Status" → `/system-status`
 
-Show all services with real health checks:
-- Gateway, Panta Adapter, Intelligence, Database, Redis
-
----
-
-### 10. System Status (30s)
-**Navigate to:** `/settings` → Click "System Status"
-
-**Show:** All dependency health checks with real checks
+Show all services with real health checks.
 
 ---
 
-## Closing (30s)
+### 3:10 — CLOSE
 
 **Say:** "Prophet is production-ready. All core workflows work end-to-end. The code is open for review. We're ready for mainnet."
 
@@ -250,9 +220,9 @@ Show all services with real health checks:
 | Failure | Response |
 |---------|----------|
 | Panta down | "Circuit breaker opens after 5 failures. Graceful degradation." |
-| AI down | "Copilot shows 'unavailable'. Market Studio falls back to manual." |
+| AI down | "Copilot returns 'unavailable'. Market Studio falls back to manual." |
 | Wallet rejects | "User rejected. Nothing submitted. Explicit action required." |
-| Solana confirms, Panta fails | "Shows 'Transaction confirmed on Solana. Panta registration pending.' Never 'failed'." |
+| Solana confirms, Panta fails | "Transaction confirmed on Solana. Panta registration is pending." |
 | Worker crashes | "Advisory lock prevents duplicates. Restart auto-recovers." |
 
 ---
@@ -268,10 +238,10 @@ Show all services with real health checks:
 
 ## Post-Demo Q&A Prep
 
-| Likely Question | Answer |
-|-----------------|--------|
-| "How is this different from [competitor]?" | "Deterministic signals, grounded AI, user custody. No float64." |
-| "How do you handle Panta downtime?" | "Circuit breaker + graceful degradation. Cached data shown with timestamp." |
+| Question | Answer |
+|----------|--------|
+| "How is this different from [competitor]?" | "Deterministic signals + grounded AI + user custody. No float64." |
+| "How do you handle Panta downtime?" | "Circuit breaker + graceful degradation. Cached data with timestamp." |
 | "Can AI create markets?" | "No. AI drafts only. Human reviews every field. Panta registers." |
 | "How do you handle Panta API changes?" | "Adapter isolates schema. Versioned endpoints. Contract tests." |
 | "What's your moat?" | "Deterministic signals + grounded AI + custody model. Hard to replicate all three." |
@@ -279,4 +249,4 @@ Show all services with real health checks:
 
 ---
 
-## End of Demo Script
+*Demo Script v1.0 — Review before every demo*

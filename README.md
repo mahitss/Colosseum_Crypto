@@ -423,6 +423,35 @@ curl http://intelligence:8001/health
 
 ---
 
+## Current Limitations
+
+| Limitation | Status | Impact |
+|------------|--------|--------|
+| Market Engine Windows build | Requires mingw (CI/Linux works) | Local Windows dev needs WSL or mingw |
+| Frontend ESLint config | zod/v4 module resolution error | Pre-existing, non-blocking |
+| Frontend build warnings | Missing optional wallet adapter packages | Install packages or mark optional |
+| CSP/HSTS headers | Not implemented | Post-demo item |
+| 1 flaky Go test | `TestAlertRulesRefuseExecutableContent/sql_in_a_name` | Pre-existing, expected behavior |
+| 1 Python test | `test_validation_rejects_today_resolution_date` | Pre-existing, validation logic difference |
+
+---
+
+## What Prophet Does NOT Do
+
+| Feature | Status | Reason |
+|---------|--------|--------|
+| Automated trading | ❌ | Custody model prohibits |
+| Automated market creation | ❌ | Human review required at every gate |
+| AI decides alert triggers | ❌ | Deterministic `MatchesRule` only |
+| AI generates market explanations without sources | ❌ | Grounded in tool results only |
+| Float64 for money | ❌ | Base-unit strings + `math/big.Rat` |
+| Auto-trading bots | ❌ | Custody model violation |
+| Claims/settlement | ❌ | Out of scope |
+| Creator fees | ❌ | Not implemented |
+| Trade attribution | ❌ | Not implemented |
+
+---
+
 ## License
 
 Proprietary — All rights reserved.
