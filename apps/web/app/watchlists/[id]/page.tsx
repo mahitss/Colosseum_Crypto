@@ -12,7 +12,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const { watchlist } = await getWatchlistIntelligence(id);
-  return { title: `${watchlist.name} - Prophet` };
+  return { title: `${watchlist.name} - QEVRYN` };
 }
 
 export default async function WatchlistDetailPage({ params }: Props) {

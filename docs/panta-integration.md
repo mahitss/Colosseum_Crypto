@@ -42,7 +42,7 @@ Or run `make panta-smoke` from the repository root. The command fails clearly wh
 
 ## Supported operations
 
-| Prophet route | Adapter route | Panta route | Behavior |
+| Qevryn route | Adapter route | Panta route | Behavior |
 | --- | --- | --- | --- |
 | `GET /api/v1/markets` | `GET /markets/` | `GET /api/v1/markets/` | Cursor-paginated catalog, optional `category`, `status`, `createdBy`, `cursor`, and `limit` (1-50; Panta default 20). |
 | `GET /api/v1/markets/{id}` | `GET /markets/{id}/` | `GET /api/v1/markets/{marketId}/` | Catalog detail including spot price fields when Panta's RPC lookup is available. |
@@ -52,7 +52,7 @@ The catalog list does not live-query chain prices; price fields are null there. 
 
 ## Models, auth, and errors
 
-Panta JSON models are confined to `services/panta-adapter/internal/client`. The adapter validates/decode bounds the response and maps each record through `internal/markets` to shared `prophet/types.Market`. The gateway consumes and returns only Prophet domain types.
+Panta JSON models are confined to `services/panta-adapter/internal/client`. The adapter validates/decode bounds the response and maps each record through `internal/markets` to shared `qevryn/types.Market`. The gateway consumes and returns only Qevryn domain types.
 
 The server authenticates with `X-Api-Key` and forwards a generated/caller request ID as `X-Request-Id`. Logs contain the request path, status, duration, attempt, and safe error kind only; credentials and response bodies are not logged. Adapter errors are typed and caller responses are sanitized.
 

@@ -3,7 +3,7 @@ import { getAlertEvents, getAlertRules, getWatchlists } from '@/lib/enterprise-a
 import { AlertsSettingsContent } from './alerts-content';
 
 export const metadata: Metadata = {
-  title: 'Alert Rules — Prophet',
+  title: 'Alert Rules — QEVRYN',
   description: 'Configure deterministic alert rules and inspect recent alert activity.',
 };
 

@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export const revalidate = 30;
 
 export const metadata: Metadata = {
-  title: 'Signal Radar — Prophet',
+  title: 'Signal Radar — QEVRYN',
   description: 'Live feed of detected signal events across prediction markets.',
 };
 

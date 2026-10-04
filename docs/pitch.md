@@ -1,14 +1,14 @@
-# Prophet — Pitch Document
+# QEVRYN — Pitch Document
 
 ## One-Liner
 
-**Prophet is an enterprise prediction intelligence platform that turns prediction-market activity into continuously monitored, explainable signals.**
+**QEVRYN is an enterprise prediction intelligence platform that turns prediction-market activity into continuously monitored, explainable signals.**
 
 ---
 
 ## 30-Second Pitch
 
-"Prediction markets generate some of the highest-quality probabilistic forecasts available, but they're trapped in poor user experiences — fragmented venues, manual monitoring, no signal layer. Prophet solves this by turning prediction-market activity into a structured intelligence layer: deterministic signals computed from raw market data, AI explanations grounded in actual data, watchlists and alerts that actually work, and a trading workflow where the user never surrenders custody. Panta provides the markets; Prophet provides the intelligence."
+"Prediction markets generate some of the highest-quality probabilistic forecasts available, but they're trapped in poor user experiences — fragmented venues, manual monitoring, no signal layer. Qevryn solves this by turning prediction-market activity into a structured intelligence layer: deterministic signals computed from raw market data, AI explanations grounded in actual data, watchlists and alerts that actually work, and a trading workflow where the user never surrenders custody. Panta provides the markets; Qevryn provides the intelligence."
 
 ---
 
@@ -18,11 +18,11 @@
 
 **The Insight:** Prediction markets already produce high-quality probabilistic forecasts. The problem isn't the data — it's the interface. What if the market data was continuously organized into deterministic signals, watchlists, alerts, and AI explanations, with a trading workflow where the user never surrenders custody?
 
-**The Solution:** Prophet is an enterprise prediction intelligence platform. Panta provides the market infrastructure on Solana. Prophet builds the intelligence layer on top: deterministic signals computed via fixed-point arithmetic, a Signal Radar with severity-filtered streaming, watchlists and alerts with database-enforced idempotency, an AI Copilot that cites sources for every claim, a Market Studio where AI drafts but humans decide, and a trading workflow where the user's wallet signs every transaction.
+**The Solution:** Qevryn is an enterprise prediction intelligence platform. Panta provides the market infrastructure on Solana. Qevryn builds the intelligence layer on top: deterministic signals computed via fixed-point arithmetic, a Signal Radar with severity-filtered streaming, watchlists and alerts with database-enforced idempotency, an AI Copilot that cites sources for every claim, a Market Studio where AI drafts but humans decide, and a trading workflow where the user's wallet signs every transaction.
 
-**Panta Integration:** Panta is the prediction-market protocol on Solana. Prophet integrates at the API boundary — market discovery, fee quotes, unsigned transaction building, registration — while keeping the server-side Panta API key isolated from the browser.
+**Panta Integration:** Panta is the prediction-market protocol on Solana. Qevryn integrates at the API boundary — market discovery, fee quotes, unsigned transaction building, registration — while keeping the server-side Panta API key isolated from the browser.
 
-**Differentiation:** Three pillars that are hard to replicate together: (1) Deterministic signal engine in Rust using fixed-point arithmetic — no float64, ever. (2) AI that explains, never decides — every response cites sources, tools are logged, no autonomous actions. (3) Custody model where the server never sees private keys — the user's wallet signs, Panta verifies, Prophet indexes.
+**Differentiation:** Three pillars that are hard to replicate together: (1) Deterministic signal engine in Rust using fixed-point arithmetic — no float64, ever. (2) AI that explains, never decides — every response cites sources, tools are logged, no autonomous actions. (3) Custody model where the server never sees private keys — the user's wallet signs, Panta verifies, Qevryn indexes.
 
 ---
 
@@ -32,7 +32,7 @@
 
 **Insight:** The market data is high quality. The interface is the problem. What if the market data was continuously organized into deterministic signals, watchlists, alerts, and AI explanations, with a trading workflow where the user never surrenders custody?
 
-**Product:** Prophet is an enterprise prediction intelligence platform. Panta provides the market infrastructure on Solana. Prophet builds the intelligence layer: deterministic signals computed via fixed-point arithmetic in Rust, a Signal Radar with severity-filtered streaming, watchlists and alerts with database-enforced idempotency, an AI Copilot that cites sources for every claim, a Market Studio where AI drafts but humans decide, and a trading workflow where the user's wallet signs every transaction.
+**Product:** Qevryn is an enterprise prediction intelligence platform. Panta provides the market infrastructure on Solana. Qevryn builds the intelligence layer: deterministic signals computed via fixed-point arithmetic in Rust, a Signal Radar with severity-filtered streaming, watchlists and alerts with database-enforced idempotency, an AI Copilot that cites sources for every claim, a Market Studio where AI drafts but humans decide, and a trading workflow where the user's wallet signs every transaction.
 
 **Architecture:** Next.js frontend → Go Gateway (orchestration, auth, rate limiting, circuit breaker) → Panta Adapter (typed boundary, circuit breaker, retries) → Panta API → Solana. Python Intelligence service for AI Market Architect and Copilot. Rust Market Engine for deterministic signal generation (fixed-point arithmetic, 12 decimal places, never float64). PostgreSQL for durable state, Redis for caching.
 
@@ -54,7 +54,7 @@
 - Deterministic fingerprinting (SHA-256) for deduplication — excludes DB IDs and timestamps
 
 ### Panta-Native Integration
-- Panta Adapter isolates Prophet from Panta schema changes
+- Panta Adapter isolates Qevryn from Panta schema changes
 - Circuit breaker (5 failures → open, 30s timeout, 2 successes → closed)
 - Retries with jittered exponential backoff, Retry-After header respected
 - Typed Go client with request/response validation
@@ -124,7 +124,7 @@
 
 ---
 
-## What Prophet Does NOT Do
+## What Qevryn Does NOT Do
 
 | Feature | Status | Reason |
 |---------|--------|--------|
@@ -303,7 +303,7 @@ curl http://intelligence:8001/health
 | `CORS_ALLOWED_ORIGINS` | Intelligence | Production |
 | `JWT_SECRET` | Gateway | Yes |
 | `JWT_EXPIRY` | Gateway | No (default 24h) |
-| `JWT_AUDIENCE` | Gateway | No (default: prophet-api) |
+| `JWT_AUDIENCE` | Gateway | No (default: qevryn-api) |
 
 ---
 
@@ -340,5 +340,5 @@ Proprietary — All rights reserved.
 
 ---
 
-*Prophet — Enterprise Prediction Intelligence Platform*  
+*QEVRYN — Enterprise Prediction Intelligence Platform*  
 *See what the market thinks happens next.*

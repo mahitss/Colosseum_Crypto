@@ -1,4 +1,4 @@
-# Prophet
+# QEVRYN
 
 Enterprise Prediction Intelligence Platform
 
@@ -8,9 +8,9 @@ Enterprise Prediction Intelligence Platform
 
 ## Overview
 
-Prophet transforms prediction-market activity into a structured intelligence layer. Instead of forcing users to manually browse fragmented prediction markets, Prophet continuously organizes market probabilities, movements, activity changes, and liquidity shifts into deterministic signals, watchlists, alerts, and AI-grounded explanations.
+Qevryn transforms prediction-market activity into a structured intelligence layer. Instead of forcing users to manually browse fragmented prediction markets, Qevryn continuously organizes market probabilities, movements, activity changes, and liquidity shifts into deterministic signals, watchlists, alerts, and AI-grounded explanations.
 
-Panta provides the underlying prediction-market infrastructure on Solana. Prophet builds the intelligence and enterprise workflow layer on top of it.
+Panta provides the underlying prediction-market infrastructure on Solana. Qevryn builds the intelligence and enterprise workflow layer on top of it.
 
 ---
 
@@ -29,7 +29,7 @@ Prediction markets generate high-value intelligence signals, but accessing them 
 
 ## The Solution
 
-**Panta provides the infrastructure.** Prophet provides the intelligence layer.
+**Panta provides the infrastructure.** Qevryn provides the intelligence layer.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -39,7 +39,7 @@ Prediction markets generate high-value intelligence signals, but accessing them 
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Prophet Platform                          │
+│                        QEVRYN Platform                          │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌───────────┐  │
 │  │ Market      │ │ Signal      │ │ Watchlists  │ │ Alerts &  │  │
 │  │ Discovery   │ │ Radar       │ │ & Alerts    │ │ Notifications│  │
@@ -56,7 +56,7 @@ Prediction markets generate high-value intelligence signals, but accessing them 
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Custody boundary:** Prophet never holds private keys. Users sign transactions in their own wallet. The server never signs.
+**Custody boundary:** Qevryn never holds private keys. Users sign transactions in their own wallet. The server never signs.
 
 ---
 
@@ -75,7 +75,7 @@ Prediction markets produce some of the highest-quality probabilistic forecasts a
 
 ---
 
-## What Prophet Does
+## What Qevryn Does
 
 ### Market Discovery
 Unified catalog of all Panta markets with search, filtering, and pagination. Real-time probability, volume, and liquidity data.
@@ -128,7 +128,7 @@ Natural-language queries over market data:
 6. **Sign & Broadcast** — User signs in wallet; server never signs
 7. **Broadcast** — Solana RPC submission
 7. **Register** — Panta registration (only step that creates market)
-8. **Live** — Market appears in Prophet
+8. **Live** — Market appears in Qevryn
 
 *Gates:* Create button only appears after validation passes + user review + warning acknowledgment.
 
@@ -152,7 +152,7 @@ Connected wallet positions with real-time values from Panta.
 
 Prediction markets aggregate dispersed information into calibrated probabilities. They are not perfect oracles, but they provide a **useful real-time signal of collective expectations** that is difficult to replicate with other methods.
 
-Prophet makes this signal:
+Qevryn makes this signal:
 - **Continuous** — Always on, always current
 - **Structured** — Deterministic signals, not raw noise
 - **Actionable** — Alerts, watchlists, trading workflow
@@ -162,9 +162,9 @@ Prophet makes this signal:
 
 ## Panta Integration
 
-Panta is the prediction-market protocol on Solana. Prophet integrates with Panta's official API:
+Panta is the prediction-market protocol on Solana. Qevryn integrates with Panta's official API:
 
-| Feature | Panta Endpoint | Prophet Implementation |
+| Feature | Panta Endpoint | Qevryn Implementation |
 |---------|----------------|------------------------|
 | Market Listing | `GET /api/v1/markets/` | Cursor-paginated catalog |
 | Market Detail | `GET /api/v1/markets/{id}/` | Detail with spot prices |
@@ -215,7 +215,7 @@ API      API         Signals
 
 ---
 
-## What Prophet Does NOT Do
+## What Qevryn Does NOT Do
 
 | Feature | Status | Reason |
 |---------|--------|--------|
@@ -436,7 +436,7 @@ curl http://intelligence:8001/health
 
 ---
 
-## What Prophet Does NOT Do
+## What Qevryn Does NOT Do
 
 | Feature | Status | Reason |
 |---------|--------|--------|
@@ -458,5 +458,5 @@ Proprietary — All rights reserved.
 
 ---
 
-*Prophet — Enterprise Prediction Intelligence Platform*  
+*QEVRYN — Enterprise Prediction Intelligence Platform*  
 *See what the market thinks happens next.*

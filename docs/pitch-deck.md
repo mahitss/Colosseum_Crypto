@@ -1,4 +1,4 @@
-# Prophet — One-Pager
+# QEVRYN — One-Pager
 
 ## The Problem
 
@@ -12,13 +12,13 @@ Prediction markets generate high-quality probabilistic forecasts, but they're tr
 
 ---
 
-## The Solution: Prophet
+## The Solution: Qevryn
 
 **Enterprise Prediction Intelligence Platform**
 
-Prophet turns prediction-market activity into a structured intelligence layer.
+Qevryn turns prediction-market activity into a structured intelligence layer.
 
-| Panta Provides | Prophet Adds |
+| Panta Provides | Qevryn Adds |
 |----------------|--------------|
 | Market infrastructure | Unified market catalog |
 | Raw price data | Deterministic signals |
@@ -30,7 +30,7 @@ Prophet turns prediction-market activity into a structured intelligence layer.
 
 ## Core Differentiators
 
-| Feature | How Prophet Does It |
+| Feature | How Qevryn Does It |
 |---------|---------------------|
 | **Deterministic Signals** | Fixed-point arithmetic (12 decimals), never float64 |
 | **AI Grounding** | Every AI response cites sources; no invented numbers |
@@ -57,7 +57,7 @@ Browser (Next.js) → Go Gateway → Panta Adapter → Panta API → Solana
 
 ## Key Differentiators
 
-| Feature | Typical Prediction Market App | Prophet |
+| Feature | Typical Prediction Market App | Qevryn |
 |---------|-------------------------------|---------|
 | Signal Generation | Manual / None | Deterministic (Rust, fixed-point) |
 | Alert Logic | LLM-based or none | Deterministic (math/big.Rat) |
@@ -69,7 +69,7 @@ Browser (Next.js) → Go Gateway → Panta Adapter → Panta API → Solana
 
 ---
 
-## What Prophet Actually Built
+## What Qevryn Actually Built
 
 | Component | Status |
 |-----------|--------|
@@ -87,7 +87,7 @@ Browser (Next.js) → Go Gateway → Panta Adapter → Panta API → Solana
 
 ---
 
-## What Prophet Does NOT Do
+## What Qevryn Does NOT Do
 
 | Feature | Status | Reason |
 |---------|--------|--------|
@@ -97,7 +97,6 @@ Browser (Next.js) → Go Gateway → Panta Adapter → Panta API → Solana
 | AI creates markets | ❌ | Human review required |
 | Float64 for money | ❌ | Base-unit strings + math/big.Rat |
 | Claims/settlement | ❌ | Out of scope |
-| Creator fees | ❌ | Not implemented |
 
 ---
 
@@ -188,7 +187,7 @@ export MARKET_ENGINE_BIN="./services/market-engine/target/release/market-engine"
 
 ## Contact
 
-**Prophet Team** — Colosseum Hackathon 2024
+**QEVRYN Team** — Colosseum Hackathon 2024
 
 *Enterprise Prediction Intelligence Platform*  
 *See what the market thinks happens next.*

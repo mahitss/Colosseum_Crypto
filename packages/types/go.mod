@@ -1,3 +1,3 @@
-module prophet/types
+module qevryn/types
 
 go 1.23.0

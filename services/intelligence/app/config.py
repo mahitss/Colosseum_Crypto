@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class Settings(BaseModel):
-    app_name: str = "prophet-intelligence"
+    app_name: str = "qevryn-intelligence"
     environment: str = "development"
     port: int = Field(default=8001, ge=1, le=65535)
     ai_provider: str = "openai"

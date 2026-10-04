@@ -8,13 +8,13 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-2">Configure your Prophet experience.</p>
+        <p className="text-muted-foreground mt-2">Configure your Qevryn experience.</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>System Status</CardTitle>
-          <CardDescription>Current health of Prophet backend services.</CardDescription>
+          <CardDescription>Current health of Qevryn backend services.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">

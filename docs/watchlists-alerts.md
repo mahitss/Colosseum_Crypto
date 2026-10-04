@@ -1,6 +1,6 @@
 # Watchlists, Signal Radar, Alerts and Notifications
 
-This is the user-owned surface of Prophet: the part of the platform a person
+This is the user-owned surface of Qevryn: the part of the platform a person
 uses to say *these markets matter to me* and then be told when something
 actually happens to them.
 
@@ -163,10 +163,22 @@ A `nil` sender or store is a hard error, not a silent no-op.
 
 ## The worker
 
-`services/gateway/cmd/worker` is a standalone binary that owns the whole
-ingestion chain. It is deliberately separate from the gateway: the gateway
-serves user requests, the worker polls a third-party API, and those have
-completely different failure modes.
+The worker holds a session-level Postgres advisory lock
+`0x50524F5048455445` — the ASCII bytes `PROPHETE` — for the life of the
+process. A second worker exits immediately rather than running.
+
+Two reasons this must not be violated: two pollers would race on observation
+timestamps, and they would double-charge the Panta rate limit.
+
+**The key must never change.** `pg_try_advisory_lock` takes a plain `bigint`
+with no namespace, so this value shares one lock space with every other advisory
+lock in the same database. Rotating it would let an old deployment and a new one
+both believe they hold "the" worker lock, which is exactly the race the lock
+exists to prevent.
+
+**Note on legacy naming:** The advisory lock key `0x50524F5048455445` (ASCII "PROPHETE") is a legacy constant. Future versions will use a Qevryn-branded key.
+
+### Failure handling
 
 ```
 Panta → adapter → markets + observations persisted (intelligence.Syncer)
@@ -183,7 +195,7 @@ Panta → adapter → markets + observations persisted (intelligence.Syncer)
 | `DATABASE_URL` | yes | — | The worker exits without it. |
 | `MARKET_ENGINE_BIN` | yes | — | Path to the built engine binary. |
 | `PANTA_ADAPTER_URL` | no | `http://127.0.0.1:8081` | |
-| `PROPHET_SYNC_INTERVAL_SECONDS` | no | `300` | Clamped to `[30, 86400]`. |
+| `PROPHET_SYNC_INTERVAL_SECONDS` | no | `300` | Clamped to `[30, 86400]`. (Legacy env var name; will be renamed in future) |
 
 `MARKET_ENGINE_BIN` is a hard error when unset rather than a default, and the
 startup log states the consequence explicitly. Without the engine the syncer

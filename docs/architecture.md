@@ -18,7 +18,7 @@ Solana
 
 The frontend sits in the Next.js application and communicates with the Go gateway. The Go gateway provides the public entry point for the web app and orchestrates downstream integrations, while the Panta adapter handles Panta-specific communication and translation. The Panta API is the upstream market and prediction service, and Solana is the underlying blockchain layer that supports on-chain activity.
 
-For market reads, the request path is Browser → Prophet Web → Go Gateway → Panta Adapter → Panta API. The gateway calls the adapter over an internal typed HTTP interface. Panta authentication, retry policy, Panta response models, and response validation live only in `services/panta-adapter`. Valid upstream records are mapped into shared Prophet market types before returning to the gateway. The browser never receives or uses the server-side Panta API key.
+For market reads, the request path is Browser → Qevryn Web → Go Gateway → Panta Adapter → Panta API. The gateway calls the adapter over an internal typed HTTP interface. Panta authentication, retry policy, Panta response models, and response validation live only in `services/panta-adapter`. Valid upstream records are mapped into shared Qevryn market types before returning to the gateway. The browser never receives or uses the server-side Panta API key.
 
 The adapter sends `X-Api-Key` and a correlation `X-Request-Id` to Panta. It does not log request headers or response bodies. `/health` checks local configuration only; `/health/panta` makes an authenticated read-only `GET /account/` request.
 
@@ -52,7 +52,7 @@ Go Gateway (deterministic validation, quote, build)
     ↓
 Panta API  →  Solana  →  Panta registration
     ↓
-Prophet indexing
+    Qevryn indexing
 
 Market creation is a distinct flow from trading. The user describes a market in
 prose, the AI Market Architect in `services/intelligence/app/market_studio/`

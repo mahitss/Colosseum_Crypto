@@ -6,8 +6,8 @@ import { TopBar } from '@/components/topbar';
 import { WalletProviderConfig } from '@/components/wallet-provider';
 
 export const metadata: Metadata = {
-  title: 'Prophet — Prediction Intelligence',
-  description: 'Prediction-market intelligence powered by Panta.',
+  title: 'QEVRYN — Enterprise Prediction Intelligence',
+  description: 'See what the market thinks happens next. Enterprise prediction intelligence powered by Panta.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

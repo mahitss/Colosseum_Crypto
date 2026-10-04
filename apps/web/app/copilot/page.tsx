@@ -64,7 +64,7 @@ export default function CopilotPage() {
     } catch (error) {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Error: Could not connect to Prophet Copilot. Please try again.',
+        content: 'Error: Could not connect to Qevryn Copilot. Please try again.',
         timestamp: new Date(),
       }]);
     } finally {
@@ -75,10 +75,10 @@ export default function CopilotPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>AI Copilot</CardTitle>
-          <CardDescription>Ask Prophet about prediction markets.</CardDescription>
-        </CardHeader>
+<CardHeader>
+  <CardTitle>AI Copilot</CardTitle>
+  <CardDescription>Ask Qevryn about prediction markets.</CardDescription>
+</CardHeader>
         <CardContent>
           <div className="flex flex-col h-[400px] overflow-auto border rounded-lg p-4 bg-slate-950 space-y-4">
             {messages.length === 0 ? (
