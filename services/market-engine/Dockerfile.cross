@@ -4,8 +4,9 @@
 
 FROM debian:bookworm-slim AS builder
 
-# Install mingw-w64 cross-compiler and Rust
+# Install mingw-w64 cross-compiler, native build tools, and Rust
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     curl \
     mingw-w64 \
     pkg-config \

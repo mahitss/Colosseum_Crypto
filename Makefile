@@ -47,8 +47,10 @@ worker-build:
 # Use this on Windows/macOS/Linux when MSVC/Visual Studio is not available locally.
 # Requires Docker. Outputs to services/market-engine/target/x86_64-pc-windows-gnu/release/market-engine.exe
 market-engine-cross:
-	docker build -f services/market-engine/Dockerfile.cross -t market-engine-cross .
-	docker run --rm -v $(shell pwd):/src market-engine-cross cp /market-engine.exe services/market-engine/target/x86_64-pc-windows-gnu/release/market-engine.exe
+	docker build -f services/market-engine/Dockerfile.cross --target builder -t market-engine-builder .
+	docker create --name market-engine-builder-bin market-engine-builder
+	docker cp market-engine-builder-bin:/app/target/x86_64-pc-windows-gnu/release/market-engine.exe services/market-engine/target/x86_64-pc-windows-gnu/release/market-engine.exe
+	docker rm market-engine-builder-bin
 
 # worker runs the alert-ingestion worker in the foreground. It requires
 # DATABASE_URL and MARKET_ENGINE_BIN; see docs/watchlists-alerts.md.
