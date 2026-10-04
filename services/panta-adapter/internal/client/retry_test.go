@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	adaptererrors "prophet/panta-adapter/internal/errors"
+	adaptererrors "qevryn/panta-adapter/internal/errors"
 )
 
 const retryTestMarketID = "11111111111111111111111111111111"
@@ -57,3 +57,4 @@ func TestMalformedJSONIsNotRetried(t *testing.T) {
 func errorsAs(err error, target any) bool {
 	return errors.As(err, target)
 }
+

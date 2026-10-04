@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"strings"
 
-	"prophet/panta-adapter/internal/client"
-	"prophet/panta-adapter/internal/config"
-	adaptererrors "prophet/panta-adapter/internal/errors"
-	"prophet/panta-adapter/internal/markets"
-	"prophet/types"
+	"qevryn/panta-adapter/internal/client"
+	"qevryn/panta-adapter/internal/config"
+	adaptererrors "qevryn/panta-adapter/internal/errors"
+	"qevryn/panta-adapter/internal/markets"
+	"qevryn/types"
 )
 
 type pantaClient interface {
@@ -172,3 +172,4 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }
+

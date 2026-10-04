@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"prophet/gateway/internal/ratelimit"
-	"prophet/gateway/internal/trading"
+	"qevryn/gateway/internal/ratelimit"
+	"qevryn/gateway/internal/trading"
 )
 
 // Rate limiters for trading endpoints (stricter for expensive operations)

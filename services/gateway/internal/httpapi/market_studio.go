@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"prophet/gateway/internal/marketstudio"
-	"prophet/gateway/internal/ratelimit"
+	"qevryn/gateway/internal/marketstudio"
+	"qevryn/gateway/internal/ratelimit"
 )
 
 // MarketStudioService is the interface the HTTP layer depends on.

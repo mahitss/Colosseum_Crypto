@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"prophet/gateway/internal/requestid"
-	"prophet/types"
+	"qevryn/gateway/internal/requestid"
+	"qevryn/types"
 )
 
 type Service interface {
@@ -135,3 +135,4 @@ var (
 	ErrRateLimited  = errors.New("market service is rate limited")
 	ErrTimeout      = errors.New("market service timed out")
 )
+

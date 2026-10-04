@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"prophet/gateway/internal/httpapi"
-	"prophet/gateway/internal/requestid"
+	"qevryn/gateway/internal/httpapi"
+	"qevryn/gateway/internal/requestid"
 )
 
 // contextKey is a private type for context keys to avoid collisions.

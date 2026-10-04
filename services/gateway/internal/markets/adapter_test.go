@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"prophet/gateway/internal/requestid"
-	"prophet/types"
+	"qevryn/gateway/internal/requestid"
+	"qevryn/types"
 )
 
 func TestAdapterClientUsesDomainRoutesAndRequestID(t *testing.T) {
@@ -52,3 +52,4 @@ func TestAdapterClientMapsNotFoundWithoutUpstreamBody(t *testing.T) {
 		t.Fatalf("error = %v", err)
 	}
 }
+

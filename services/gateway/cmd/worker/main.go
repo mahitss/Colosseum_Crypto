@@ -76,9 +76,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"prophet/gateway/internal/intelligence"
-	"prophet/gateway/internal/markets"
-	"prophet/gateway/internal/requestid"
+	"qevryn/gateway/internal/intelligence"
+	"qevryn/gateway/internal/markets"
+	"qevryn/gateway/internal/requestid"
 )
 
 const (
@@ -641,3 +641,4 @@ func newRequestID() (string, error) {
 	}
 	return hex.EncodeToString(value[:]), nil
 }
+

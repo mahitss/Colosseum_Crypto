@@ -1,4 +1,4 @@
-# Prophet Trading E2E Test Mode
+# QEVRYN Trading E2E Test Mode
 
 Automated tests must **never** spend real funds or touch mainnet.
 

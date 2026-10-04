@@ -3,7 +3,7 @@ package intelligence
 import (
 	"testing"
 
-	"prophet/types"
+	"qevryn/types"
 )
 
 func TestNormalizeMarketUsesOnlyAvailablePantaFields(t *testing.T) {
@@ -45,3 +45,4 @@ func humanUSDC(value string) *types.HumanUSDC {
 	amount := types.HumanUSDC(value)
 	return &amount
 }
+

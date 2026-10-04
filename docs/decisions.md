@@ -13,7 +13,7 @@ The repository uses a monorepo layout to keep the web application, API services,
 
 ## Panta integration
 
-Panta communication is isolated in the Go adapter. The gateway calls an internal typed HTTP contract and returns shared Prophet domain objects rather than Panta JSON. Panta models and parsing stay in the adapter so upstream schema changes do not leak into the public API.
+Panta communication is isolated in the Go adapter. The gateway calls an internal typed HTTP contract and returns shared QEVRYN domain objects rather than Panta JSON. Panta models and parsing stay in the adapter so upstream schema changes do not leak into the public API.
 
 The adapter authenticates server-to-server with `X-Api-Key`, retries only network/timeout, 429, and 5xx failures with bounded exponential backoff, and respects `Retry-After` up to a bounded wait. Authentication, authorization, validation, and not-found errors are never retried; errors returned to callers omit raw upstream bodies and internal HTTP details.
 
@@ -35,3 +35,4 @@ Environment variables and secrets are intentionally kept out of version control.
 ## Validation
 
 The project validates the repository foundation by running frontend builds, Go tests, Python tests, Rust tests, and Foundry tests in CI.
+

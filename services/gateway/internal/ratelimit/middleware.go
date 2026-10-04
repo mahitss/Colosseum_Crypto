@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"prophet/gateway/internal/requestid"
+	"qevryn/gateway/internal/requestid"
 )
 
 // RateLimitConfig holds configuration for rate limiting.

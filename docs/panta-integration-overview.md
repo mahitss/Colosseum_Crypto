@@ -17,7 +17,7 @@ Panta is the leading prediction-market protocol on Solana, providing:
 
 ---
 
-## How Prophet Consumes Panta
+## How QEVRYN Consumes Panta
 
 ### Flow 1: Market Discovery (Read Path)
 
@@ -26,13 +26,13 @@ Browser → Next.js → Go Gateway → Panta Adapter → Panta API
 ```
 
 **Endpoints used:**
-| Prophet Route | Adapter Route | Panta Route | Behavior |
+| QEVRYN Route | Adapter Route | Panta Route | Behavior |
 |--------------|---------------|-------------|----------|
 | `GET /api/v1/markets` | `GET /markets/` | `GET /api/v1/markets/` | Cursor-paginated catalog, optional `category`, `status`, `createdBy`, `cursor`, `limit` (1-50) |
 | `GET /api/v1/markets/{id}` | `GET /markets/{id}/` | `GET /api/v1/markets/{marketId}/` | Catalog detail including spot price fields when RPC available |
 
 **Adapter responsibilities:**
-- Normalize Panta JSON → Prophet `types.Market`
+- Normalize Panta JSON → QEVRYN `types.Market`
 - Validate response schema (reject malformed)
 - Retry logic: 3 attempts, jittered exponential backoff, `Retry-After` respected (capped 30s)
 - Circuit breaker: 5 failures → open, 30s timeout, 2 successes → closed
@@ -49,7 +49,7 @@ Browser → Next.js → Go Gateway → Panta Adapter → Panta API
 ### Flow 2: Market Creation (Write Path)
 
 ```
-Next.js → Go Gateway → Market Studio → Panta Adapter → Panta API → Solana → Panta Registration → Prophet Indexing
+Next.js → Go Gateway → Market Studio → Panta Adapter → Panta API → Solana → Panta Registration → QEVRYN Indexing
 ```
 
 **Endpoints used:**
@@ -78,7 +78,7 @@ Next.js → Go Gateway → Market Studio → Panta Adapter → Panta API → Sol
 ### Flow 3: Trading (Primary Buy)
 
 ```
-User → Prophet UI → Gateway → Panta Adapter → Panta API
+User → QEVRYN UI → Gateway → Panta Adapter → Panta API
                            ↑                    ↓
                       User Wallet ←─────────────┘
 ```

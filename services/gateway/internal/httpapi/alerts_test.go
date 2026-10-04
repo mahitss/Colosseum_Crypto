@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"prophet/gateway/internal/intelligence"
+	"qevryn/gateway/internal/intelligence"
 )
 
 type recordingAlerts struct {
@@ -400,3 +400,4 @@ func TestNotificationListReturnsAnArrayNotNull(t *testing.T) {
 		t.Fatalf("an empty inbox serialised as null, which the client must special-case: %s", response.Body.String())
 	}
 }
+

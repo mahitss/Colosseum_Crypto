@@ -1,4 +1,4 @@
-# Prophet — Screenshot Checklist for Submission
+# QEVRYN — Screenshot Checklist for Submission
 
 ## Overview
 

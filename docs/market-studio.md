@@ -49,7 +49,7 @@ Gateway broadcasts to Solana
   ↓ confirmation
 Panta Registration ──── the only step that makes a market exist
   ↓
-Prophet Indexing ──── market becomes visible in the app
+QEVRYN Indexing ──── market becomes visible in the app
 ```
 
 Only the **Panta Registration** step creates a market. A Solana signature by
@@ -262,3 +262,4 @@ The two most important tests are
 `registration is never reported as a creation failure` in the frontend suite.
 Both exist to keep the honest-but-uncomfortable wording from being "simplified"
 away by a future edit.
+

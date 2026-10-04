@@ -1,4 +1,4 @@
-# Prophet Security Documentation
+# QEVRYN Security Documentation
 
 **Version:** 1.0  
 **Date:** 2025-09-29
@@ -200,7 +200,7 @@ Any state -> FAILED, CANCELLED, UNKNOWN
 - **Algorithm**: HS256 (symmetric, rotating secret)
 - **Claims**: `user_id` (sub), `email`, `role`, `exp`, `iat`, `jti`
 - **Expiry**: 24 hours (configurable via `JWT_EXPIRY`)
-- **Audience**: `prophet-api` (configurable via `JWT_AUDIENCE`)
+- **Audience**: `QEVRYN-api` (configurable via `JWT_AUDIENCE`)
 
 ### Flow
 

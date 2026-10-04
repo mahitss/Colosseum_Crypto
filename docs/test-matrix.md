@@ -1,7 +1,7 @@
 # Test Matrix
 
 ## Overview
-This document tracks all test suites across the Prophet codebase. Each test must be run and verified before marking PASS.
+This document tracks all test suites across the QEVRYN codebase. Each test must be run and verified before marking PASS.
 
 ---
 

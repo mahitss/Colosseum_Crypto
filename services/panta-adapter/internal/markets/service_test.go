@@ -3,8 +3,8 @@ package markets
 import (
 	"testing"
 
-	"prophet/panta-adapter/internal/client"
-	"prophet/types"
+	"qevryn/panta-adapter/internal/client"
+	"qevryn/types"
 )
 
 func TestMapMarketPreservesDocumentedFieldsAndDecimalPrices(t *testing.T) {
@@ -24,3 +24,4 @@ func TestMapMarketPreservesDocumentedFieldsAndDecimalPrices(t *testing.T) {
 		t.Fatalf("unexpected mapped price: %#v", market.YesPrice)
 	}
 }
+

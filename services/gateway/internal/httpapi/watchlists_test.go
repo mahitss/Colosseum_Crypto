@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"prophet/gateway/internal/intelligence"
+	"qevryn/gateway/internal/intelligence"
 )
 
 // --- identifiers ------------------------------------------------------------
@@ -423,3 +423,4 @@ func TestNewHandlerWithAllServicesStaysAWatchlistFreeSubset(t *testing.T) {
 		t.Fatalf("health regressed: %d", health.Code)
 	}
 }
+

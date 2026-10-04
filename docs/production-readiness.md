@@ -1,4 +1,4 @@
-# Prophet Production Readiness Audit
+# QEVRYN Production Readiness Audit
 
 **Generated:** 2025-09-29  
 **Task:** TASK 009 — Production Hardening  
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-Prophet is a well-architected prediction intelligence platform with strong foundations in deterministic computing, database-enforced idempotency, and clear custody boundaries. The codebase demonstrates disciplined engineering practices: parameterized queries everywhere, structured logging, database-level deduplication, and strict separation of concerns.
+QEVRYN is a well-architected prediction intelligence platform with strong foundations in deterministic computing, database-enforced idempotency, and clear custody boundaries. The codebase demonstrates disciplined engineering practices: parameterized queries everywhere, structured logging, database-level deduplication, and strict separation of concerns.
 
 **Overall Assessment:** **PRODUCTION-READY WITH TARGETED HARDENING**
 
@@ -123,7 +123,7 @@ No critical security vulnerabilities were found. The system correctly enforces:
 
 | ID | Race Condition | Location | Mitigation |
 |----|----------------|----------|------------|
-| RACE-001 | **Worker advisory lock key is global** | `worker/main.go:96` | Key `0x50524F5048455445` ("PROPHETE") shares lock space across ALL deployments using same DB. Multiple environments (staging/prod) will conflict. |
+| RACE-001 | **Worker advisory lock key is global** | `worker/main.go:96` | Key `0x50524F5048455445` ("QEVRYNE") shares lock space across ALL deployments using same DB. Multiple environments (staging/prod) will conflict. |
 | RACE-002 | **Signal bridge window overlap** | `worker/main.go:434-438` | Intentional design; documented and safe due to fingerprint UNIQUE constraint |
 
 ### MEDIUM

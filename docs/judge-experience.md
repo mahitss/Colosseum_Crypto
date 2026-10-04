@@ -1,4 +1,4 @@
-# Prophet — Judge Experience Document
+# QEVRYN — Judge Experience Document
 
 ## What Judges Will See in the First 30 Seconds
 
@@ -132,7 +132,7 @@ Quote → Build → Wallet Sign → Broadcast → Confirm → Report → Verify 
 1. **Signal → Explanation** — Click signal → Explanation matches exact numbers
 2. **Alert → Notification** — Create rule → Trigger signal → Notification appears
 3. **Trade → Verify** → Quote → Build → Sign → Broadcast → Confirm → Report → Verify
-4. **Market Creation** → Register → Market ID appears in Prophet
+4. **Market Creation** → Register → Market ID appears in QEVRYN
 5. **CONFIRMED ≠ VERIFIED** — Show confirmed-but-unregistered state
 
 ### Database Queries Judges Can Run
@@ -243,4 +243,4 @@ FROM trade_attempts ORDER BY created_at DESC LIMIT 10;
 
 ---
 
-*Prepared for Colosseum Hackathon 2024 — Prophet Team*
+*Prepared for Colosseum Hackathon 2024 — QEVRYN Team*

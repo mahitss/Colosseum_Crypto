@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.46.0
 	go.opentelemetry.io/otel/sdk/metric v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0
+	qevryn/types v0.0.0-00010101000000-000000000000
 )
 
 require (

@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"prophet/gateway/internal/trading"
+	"qevryn/gateway/internal/trading"
 )
 
 // fakeTradeService implements TradeService in memory for HTTP tests.
@@ -264,3 +264,4 @@ func TestTradeStatusNotFound(t *testing.T) {
 		t.Fatalf("expected 404, got %d", rec.Code)
 	}
 }
+

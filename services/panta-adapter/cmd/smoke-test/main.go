@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"os"
 
-	"prophet/panta-adapter/internal/client"
-	"prophet/panta-adapter/internal/config"
+	"qevryn/panta-adapter/internal/client"
+	"qevryn/panta-adapter/internal/config"
 )
 
 func main() {
@@ -38,3 +38,4 @@ func fail(err error) {
 	fmt.Fprintln(os.Stderr, err)
 	os.Exit(1)
 }
+

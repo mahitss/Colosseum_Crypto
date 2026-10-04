@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"prophet/gateway/internal/marketstudio"
+	"qevryn/gateway/internal/marketstudio"
 )
 
 // stubMarketStudio is a scriptable MarketStudioService. Every field is a
@@ -487,3 +487,4 @@ func TestMarketStudioStatusMapping(t *testing.T) {
 		}
 	}
 }
+

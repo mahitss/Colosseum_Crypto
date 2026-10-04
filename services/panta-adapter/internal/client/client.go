@@ -18,8 +18,8 @@ import (
 	"strings"
 	"time"
 
-	adaptererrors "prophet/panta-adapter/internal/errors"
-	"prophet/types"
+	adaptererrors "qevryn/panta-adapter/internal/errors"
+	"qevryn/types"
 )
 
 const (
@@ -394,3 +394,4 @@ func newRequestID() (string, error) {
 	}
 	return hex.EncodeToString(bytes[:]), nil
 }
+

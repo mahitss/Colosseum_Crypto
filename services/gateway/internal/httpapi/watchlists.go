@@ -35,8 +35,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"prophet/gateway/internal/intelligence"
-	"prophet/types"
+	"qevryn/gateway/internal/intelligence"
+	"qevryn/types"
 )
 
 const (
@@ -553,3 +553,4 @@ func isHexDigit(character byte) bool {
 		(character >= 'a' && character <= 'f') ||
 		(character >= 'A' && character <= 'F')
 }
+

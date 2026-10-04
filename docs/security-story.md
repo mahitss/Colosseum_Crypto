@@ -4,7 +4,7 @@
 
 > **"AI agents never receive private keys or autonomous financial authority."**
 
-This is the single invariant that governs every security decision in Prophet.
+This is the single invariant that governs every security decision in QEVRYN.
 
 ---
 
@@ -13,7 +13,7 @@ This is the single invariant that governs every security decision in Prophet.
 ### User-Controlled Wallet
 - **Private keys never leave the user's device.** Phantom, Solflare, Backpack — the wallet lives in the browser extension or mobile app.
 - **The server never sees private keys.** Not encrypted, not derived, not in memory, not in logs, not in the database.
-- **Seed phrases never touch Prophet.** Not in transit, not at rest, never.
+- **Seed phrases never touch QEVRYN.** Not in transit, not at rest, never.
 
 ### Unsigned Transaction Architecture
 ```
@@ -222,9 +222,9 @@ Closed (normal) ──5 failures──▶ Open (30s) ──2 successes──▶ 
 
 | Role | Contact |
 |----------|---------|
-| Security issues | security@prophet.example.com |
-| Vulnerability disclosure | security@prophet.example.com |
-| On-call | PagerDuty: prophet-oncall |
+| Security issues | security@QEVRYN.example.com |
+| Vulnerability disclosure | security@QEVRYN.example.com |
+| On-call | PagerDuty: QEVRYN-oncall |
 
 ---
 

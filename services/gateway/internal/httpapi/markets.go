@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	adapter "prophet/gateway/internal/markets"
-	"prophet/types"
+	adapter "qevryn/gateway/internal/markets"
+	"qevryn/types"
 )
 
 type marketService interface {
@@ -72,3 +72,4 @@ func writeMarketServiceError(w http.ResponseWriter, err error) {
 		writeMarketError(w, http.StatusBadGateway, "MARKET_SERVICE_UNAVAILABLE", "market service is unavailable")
 	}
 }
+

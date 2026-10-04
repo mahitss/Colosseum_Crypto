@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"prophet/gateway/internal/auth"
-	"prophet/gateway/internal/httpapi"
-	"prophet/gateway/internal/intelligence"
-	"prophet/gateway/internal/markets"
-	"prophet/gateway/internal/marketstudio"
-	"prophet/gateway/internal/trading"
+	"qevryn/gateway/internal/auth"
+	"qevryn/gateway/internal/httpapi"
+	"qevryn/gateway/internal/intelligence"
+	"qevryn/gateway/internal/markets"
+	"qevryn/gateway/internal/marketstudio"
+	"qevryn/gateway/internal/trading"
 )
 
 func main() {
@@ -296,3 +296,4 @@ func (api enterpriseAPI) MarkRead(ctx context.Context, userID string, id int64) 
 func (api enterpriseAPI) MarkAllRead(ctx context.Context, userID string) (int64, error) {
 	return api.repository.MarkAllNotificationsRead(ctx, userID)
 }
+

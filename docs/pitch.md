@@ -38,7 +38,7 @@
 
 **Panta Integration:** Market discovery via paginated catalog. Market creation: quote → build → sign → broadcast → register → index. Trading: quote → build → wallet sign → broadcast → confirm → report → verify → refresh. All amounts in USDC base units (integer strings, 6 decimals). Never float64.
 
-**Differentiation:** Three pillars that are hard to replicate together: (1) Deterministic signal engine in Rust using fixed-point arithmetic — no float64, ever. (2) AI that explains, never decides — every response cites sources, tools are logged, no autonomous actions. (3) Custody model where the server never sees private keys — the user's wallet signs, Panta verifies, Prophet indexes.
+**Differentiation:** Three pillars that are hard to replicate together: (1) Deterministic signal engine in Rust using fixed-point arithmetic — no float64, ever. (2) AI that explains, never decides — every response cites sources, tools are logged, no autonomous actions. (3) Custody model where the server never sees private keys — the user's wallet signs, Panta verifies, QEVRYN indexes.
 
 **Use Cases:** Professional traders monitoring probability shifts. Analysts tracking market movements. Teams creating custom prediction markets. Enterprises monitoring specific outcomes.
 
@@ -211,7 +211,7 @@
 docker compose -f infrastructure/docker-compose.dev.yml up -d postgres redis
 
 # 2. Export environment variables
-export DATABASE_URL="postgresql://prophet:prophet@localhost:5432/prophet"
+export DATABASE_URL="postgresql://QEVRYN:QEVRYN@localhost:5432/QEVRYN"
 export PANTA_API_KEY="your-panta-api-key"
 export PANTA_API_BASE_URL="https://live-api.panta.market/api/v1/"
 export SOLANA_RPC_URL="https://api.mainnet-beta.solana.com"

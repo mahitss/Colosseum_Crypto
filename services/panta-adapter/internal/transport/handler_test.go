@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"prophet/panta-adapter/internal/client"
-	"prophet/panta-adapter/internal/config"
+	"qevryn/panta-adapter/internal/client"
+	"qevryn/panta-adapter/internal/config"
 )
 
 const adapterTestKey = "pk_test_never_return_or_log_this"
@@ -115,3 +115,4 @@ func TestMalformedPantaResponseIsMappedToSafeError(t *testing.T) {
 		t.Fatalf("unsafe or unexpected error: status=%d body=%s", response.Code, response.Body.String())
 	}
 }
+

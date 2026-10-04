@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"prophet/types"
+	"qevryn/types"
 )
 
 const (
@@ -224,3 +224,4 @@ func requestID() (string, error) {
 	}
 	return hex.EncodeToString(value[:]), nil
 }
+

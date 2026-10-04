@@ -1,15 +1,15 @@
-# Prophet Trading Flow
+# QEVRYN Trading Flow
 
 ## Overview
 
-Prophet implements the **Panta primary-buy transaction flow** following the documented Panta custody model.
+QEVRYN implements the **Panta primary-buy transaction flow** following the documented Panta custody model.
 
-**Custody model:** Prophet never touches private keys. The application builds unsigned transactions via Panta, the user signs with their own wallet, and Prophet broadcasts to Solana using its configured RPC.
+**Custody model:** QEVRYN never touches private keys. The application builds unsigned transactions via Panta, the user signs with their own wallet, and QEVRYN broadcasts to Solana using its configured RPC.
 
 ```
 User
  ↓
-Prophet (Next.js frontend)
+QEVRYN (Next.js frontend)
  ↓
 Panta Quote → Panta Build
  ↓
@@ -37,7 +37,7 @@ Position Refresh
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant F as Prophet Frontend
+    participant F as QEVRYN Frontend
     participant G as Go Gateway
     participant P as Panta API
     participant W as Solana Wallet

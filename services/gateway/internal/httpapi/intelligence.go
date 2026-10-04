@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"prophet/gateway/internal/intelligence"
-	"prophet/types"
+	"qevryn/gateway/internal/intelligence"
+	"qevryn/types"
 )
 
 const maximumSignalLimit = 100
@@ -129,3 +129,4 @@ func validSeverity(value string) bool {
 }
 
 var ErrMarketNotFound = errors.New("market not found")
+

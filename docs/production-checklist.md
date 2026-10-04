@@ -1,4 +1,4 @@
-# Prophet Production Readiness Checklist
+# QEVRYN Production Readiness Checklist
 
 **Version:** 1.0  
 **Date:** 2025-09-29  

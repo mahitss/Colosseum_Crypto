@@ -164,7 +164,7 @@ A `nil` sender or store is a hard error, not a silent no-op.
 ## The worker
 
 The worker holds a session-level Postgres advisory lock
-`0x50524F5048455445` — the ASCII bytes `PROPHETE` — for the life of the
+`0x50524F5048455445` — the ASCII bytes `QEVRYNE` — for the life of the
 process. A second worker exits immediately rather than running.
 
 Two reasons this must not be violated: two pollers would race on observation
@@ -176,7 +176,7 @@ lock in the same database. Rotating it would let an old deployment and a new one
 both believe they hold "the" worker lock, which is exactly the race the lock
 exists to prevent.
 
-**Note on legacy naming:** The advisory lock key `0x50524F5048455445` (ASCII "PROPHETE") is a legacy constant. Future versions will use a Qevryn-branded key.
+**Note on legacy naming:** The advisory lock key `0x50524F5048455445` (ASCII "QEVRYNE") is a legacy constant. Future versions will use a Qevryn-branded key.
 
 ### Failure handling
 
@@ -195,7 +195,7 @@ Panta → adapter → markets + observations persisted (intelligence.Syncer)
 | `DATABASE_URL` | yes | — | The worker exits without it. |
 | `MARKET_ENGINE_BIN` | yes | — | Path to the built engine binary. |
 | `PANTA_ADAPTER_URL` | no | `http://127.0.0.1:8081` | |
-| `PROPHET_SYNC_INTERVAL_SECONDS` | no | `300` | Clamped to `[30, 86400]`. (Legacy env var name; will be renamed in future) |
+| `QEVRYN_SYNC_INTERVAL_SECONDS` | no | `300` | Clamped to `[30, 86400]`. (Legacy env var name; will be renamed in future) |
 
 `MARKET_ENGINE_BIN` is a hard error when unset rather than a default, and the
 startup log states the consequence explicitly. Without the engine the syncer
@@ -218,7 +218,7 @@ later tick, and the overlap guarantees progress.
 ### Single instance, enforced by an advisory lock
 
 The worker holds a session-level Postgres advisory lock
-`0x50524F5048455445` — the ASCII bytes `PROPHETE` — for the life of the
+`0x50524F5048455445` — the ASCII bytes `QEVRYNE` — for the life of the
 process. A second worker exits immediately rather than running.
 
 Two reasons this must not be violated: two pollers would race on observation
@@ -393,3 +393,4 @@ The rules these tests encode are worth keeping in mind when changing any of the
 above: if you make a threshold comparison use `float64`, drop a field from a
 fingerprint, move dedupe out of the database, or let a model decide a match, the
 existing tests are what will notice.
+

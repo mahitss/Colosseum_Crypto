@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"prophet/gateway/internal/intelligence"
+	"qevryn/gateway/internal/intelligence"
 )
 
 func main() {
@@ -32,3 +32,4 @@ func fatal(message string) {
 	fmt.Fprintln(os.Stderr, message)
 	os.Exit(1)
 }
+

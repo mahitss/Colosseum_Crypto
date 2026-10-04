@@ -1,14 +1,14 @@
-# Prophet — FAQ
+# QEVRYN — FAQ
 
-## What is Prophet?
+## What is QEVRYN?
 
-Prophet is an **enterprise prediction intelligence platform** that turns prediction-market activity into continuously monitored, explainable signals. It sits on top of the Panta prediction-market protocol on Solana, adding deterministic signal generation, AI-grounded explanations, watchlists, alerts, and a human-controlled trading workflow.
+QEVRYN is an **enterprise prediction intelligence platform** that turns prediction-market activity into continuously monitored, explainable signals. It sits on top of the Panta prediction-market protocol on Solana, adding deterministic signal generation, AI-grounded explanations, watchlists, alerts, and a human-controlled trading workflow.
 
 ---
 
 ## Why prediction markets?
 
-Prediction markets aggregate dispersed information into calibrated probabilities. They are not perfect oracles, but they provide a **useful real-time signal of collective expectations** that is difficult to replicate with other methods. Prophet makes this signal continuous, structured, actionable, and explainable.
+Prediction markets aggregate dispersed information into calibrated probabilities. They are not perfect oracles, but they provide a **useful real-time signal of collective expectations** that is difficult to replicate with other methods. QEVRYN makes this signal continuous, structured, actionable, and explainable.
 
 ---
 
@@ -20,7 +20,7 @@ Panta is the prediction-market protocol on Solana. It provides:
 - Market creation with fee quotes and registration
 - On-chain settlement with verification
 
-Prophet integrates with Panta's official REST API. Panta handles the market infrastructure; Prophet builds the intelligence layer on top.
+QEVRYN integrates with Panta's official REST API. Panta handles the market infrastructure; QEVRYN builds the intelligence layer on top.
 
 ---
 
@@ -32,13 +32,13 @@ Prophet integrates with Panta's official REST API. Panta handles the market infr
 - Mature wallet ecosystem (Phantom, Solflare, Backpack, etc.)
 - Mature RPC infrastructure
 
-Panta chose Solana; Prophet builds on top.
+Panta chose Solana; QEVRYN builds on top.
 
 ---
 
 ## Why AI?
 
-AI in Prophet **explains, never decides**:
+AI in QEVRYN **explains, never decides**:
 
 | What AI Does | What AI Never Does |
 |--------------|-------------------|
@@ -61,7 +61,7 @@ Quote → Build → User Signs in Wallet → Broadcast → Confirm → Report �
 
 ---
 
-## Does Prophet hold private keys?
+## Does QEVRYN hold private keys?
 
 **Never.** The server stores only the Panta server API key. It never receives wallet private keys, seed phrases, or signed transaction blobs. The user's wallet (Phantom, Solflare, etc.) signs transactions; the server broadcasts and reports.
 
@@ -150,7 +150,7 @@ Severity thresholds are configurable. All arithmetic uses fixed-point (12 decima
 
 ---
 
-## Can I use Prophet without AI?
+## Can I use QEVRYN without AI?
 
 Yes. All deterministic features work without an AI key:
 - Market discovery, Signal Radar, Watchlists, Alerts, Portfolio
@@ -236,7 +236,7 @@ The market exists on-chain. Panta registration is idempotent — retry button av
 
 1. User asks question
 2. Copilot detects intent → calls allowed tools (`search_markets`, `get_signals`, `get_market_intelligence`, `compare_markets`, `get_recent_changes`)
-3. Tool returns real Prophet data
+3. Tool returns real QEVRYN data
 4. AI synthesizes answer **citing sources**
 5. Source citations are clickable → navigate to Market Detail
 

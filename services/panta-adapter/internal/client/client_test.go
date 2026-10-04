@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	adaptererrors "prophet/panta-adapter/internal/errors"
+	adaptererrors "qevryn/panta-adapter/internal/errors"
 )
 
 const testAPIKey = "pk_test_do_not_log_this"
@@ -219,3 +219,4 @@ func TestRedirectNeverForwardsAPIKey(t *testing.T) {
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
+

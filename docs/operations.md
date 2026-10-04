@@ -1,4 +1,4 @@
-# Prophet Operations Manual
+# QEVRYN Operations Manual
 
 **Version:** 1.0  
 **Date:** 2025-09-29
@@ -70,7 +70,7 @@ Panta API + Solana
 docker compose -f infrastructure/docker-compose.dev.yml up -d postgres redis
 
 # 2. Export environment variables (see .env.example)
-export DATABASE_URL="postgresql://prophet:prophet@localhost:5432/prophet"
+export DATABASE_URL="postgresql://QEVRYN:QEVRYN@localhost:5432/QEVRYN"
 export PANTA_ADAPTER_URL="http://127.0.0.1:8081"
 export PANTA_API_KEY="your-panta-api-key"
 export SOLANA_RPC_URL="https://api.mainnet-beta.solana.com"
@@ -142,7 +142,7 @@ cd contracts/evm && forge test
 | Gateway | INTELLIGENCE_SERVICE_URL | No | http://localhost:8001 |
 | Gateway | JWT_SECRET | Yes | - |
 | Gateway | JWT_EXPIRY | No | 24h |
-| Gateway | JWT_AUDIENCE | No | prophet-api |
+| Gateway | JWT_AUDIENCE | No | QEVRYN-api |
 | Panta Adapter | PANTA_API_BASE_URL | No | https://live-api.panta.market/api/v1/ |
 | Panta Adapter | PANTA_API_KEY | Yes | - |
 | Panta Adapter | PANTA_API_TIMEOUT_SECONDS | No | 10 |
@@ -152,7 +152,7 @@ cd contracts/evm && forge test
 | Intelligence | AI_API_KEY | For AI features | - |
 | Intelligence | CORS_ALLOWED_ORIGINS | Production only | https://app.example.com |
 | Worker | MARKET_ENGINE_BIN | Yes | /path/to/market-engine |
-| Worker | PROPHET_SYNC_INTERVAL_SECONDS | No | 300 |
+| Worker | QEVRYN_SYNC_INTERVAL_SECONDS | No | 300 |
 | Worker | WORKER_ADVISORY_LOCK_KEY | Per deployment | 0x50524F5048455445 |
 
 ### Secrets Management
@@ -408,7 +408,7 @@ All services expose `/metrics` for Prometheus scraping.
 
 ```yaml
 scrape_configs:
-  - job_name: 'prophet'
+  - job_name: 'QEVRYN'
     static_configs:
       - targets: ['gateway:8080', 'panta-adapter:8081', 'intelligence:8001']
 ```
@@ -417,7 +417,7 @@ scrape_configs:
 
 ```yaml
 groups:
-- name: prophet
+- name: QEVRYN
   rules:
   - alert: HighErrorRate
     expr: rate(errors_total[5m]) > 0.1
@@ -451,7 +451,7 @@ groups:
 ```bash
 # Environment variables
 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-OTEL_SERVICE_NAME=prophet-gateway
+OTEL_SERVICE_NAME=QEVRYN-gateway
 OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production,service.version=1.0.0
 ```
 
@@ -466,13 +466,13 @@ OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production,service.version=1.0.0
 
 ```bash
 # Find slow requests
-{service="prophet-gateway"} | duration > 1s
+{service="QEVRYN-gateway"} | duration > 1s
 
 # Find errors
-{service="prophet-gateway"} | level=error
+{service="QEVRYN-gateway"} | level=error
 
 # Trace a request
-{service="prophet-gateway"} | trace_id="abc123..."
+{service="QEVRYN-gateway"} | trace_id="abc123..."
 ```
 
 ---
@@ -547,7 +547,7 @@ docker compose logs postgres
 docker compose restart postgres
 
 # 3. Verify connectivity
-pg_isready -h localhost -U prophet -d prophet
+pg_isready -h localhost -U QEVRYN -d QEVRYN
 
 # 4. Restart services
 docker compose restart gateway worker
@@ -774,7 +774,7 @@ docker compose restart gateway
 docker compose down
 
 # 2. Restore database from backup
-pg_restore -d prophet backup.dump
+pg_restore -d QEVRYN backup.dump
 
 # 3. Deploy previous version
 git checkout <previous-tag>
@@ -807,11 +807,11 @@ curl -X POST http://localhost:8081/debug/circuit-breaker/reset
 
 | Component | Contact | Escalation |
 |-----------|---------|------------|
-| Gateway | @backend-team | PagerDuty: prophet-gateway |
-| Panta Adapter | @backend-team | PagerDuty: prophet-panta |
-| Intelligence | @ml-team | PagerDuty: prophet-intelligence |
-| Worker | @backend-team | PagerDuty: prophet-worker |
-| Database | @dba-team | PagerDuty: prophet-db |
+| Gateway | @backend-team | PagerDuty: QEVRYN-gateway |
+| Panta Adapter | @backend-team | PagerDuty: QEVRYN-panta |
+| Intelligence | @ml-team | PagerDuty: QEVRYN-intelligence |
+| Worker | @backend-team | PagerDuty: QEVRYN-worker |
+| Database | @dba-team | PagerDuty: QEVRYN-db |
 | Panta API | support@panta.market | Email/Slack |
 | AI Provider | OpenAI Support | API Dashboard |
 

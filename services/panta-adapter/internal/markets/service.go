@@ -3,8 +3,8 @@ package markets
 import (
 	"context"
 
-	"prophet/panta-adapter/internal/client"
-	"prophet/types"
+	"qevryn/panta-adapter/internal/client"
+	"qevryn/types"
 )
 
 type pantaReader interface {
@@ -65,3 +65,4 @@ func toHumanUSDC(value *client.PantaDecimal) *types.HumanUSDC {
 	normalized := types.HumanUSDC(*value)
 	return &normalized
 }
+

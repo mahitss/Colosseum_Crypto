@@ -1,7 +1,7 @@
-# Prophet - Final System Inventory
+# QEVRYN - Final System Inventory
 
 ## Overview
-This document provides a complete inventory of the Prophet codebase as of the final integration audit (TASK 011).
+This document provides a complete inventory of the QEVRYN codebase as of the final integration audit (TASK 011).
 
 ---
 
@@ -50,7 +50,7 @@ closseum hack/
 - **Language**: Go 1.23
 - **Key Dependencies**:
   - `github.com/jackc/pgx/v5` (PostgreSQL)
-  - `prophet/types` (shared types)
+  - `QEVRYN/types` (shared types)
 - **Ports**: 8080 (HTTP)
 - **Environment Variables**: `PORT`, `PANTA_ADAPTER_URL`, `DATABASE_URL`, `PANTA_API_URL`, `PANTA_API_KEY`, `SOLANA_RPC_URL`, `INTELLIGENCE_SERVICE_URL`, `JWT_SECRET`, `JWT_EXPIRY`, `JWT_AUDIENCE`
 - **Production Status**: Built, tested, Dockerfile ready
@@ -58,7 +58,7 @@ closseum hack/
 ### 3. services/panta-adapter (Go Panta Adapter)
 - **Purpose**: Panta API integration boundary (reads only)
 - **Language**: Go 1.23
-- **Key Dependencies**: `prophet/types`, `prophet/panta-adapter/internal/errors`
+- **Key Dependencies**: `QEVRYN/types`, `QEVRYN/panta-adapter/internal/errors`
 - **Ports**: 8081 (HTTP)
 - **Environment Variables**: `PANTA_API_BASE_URL`, `PANTA_API_KEY`, `PANTA_API_TIMEOUT_SECONDS`
 - **Production Status**: Built, tested, Dockerfile ready, circuit breaker implemented
@@ -147,17 +147,17 @@ closseum hack/
 | `PANTA_ADAPTER_URL` | Gateway | No | Default: http://127.0.0.1:8081 |
 | `JWT_SECRET` | Gateway | Yes | JWT signing secret |
 | `JWT_EXPIRY` | Gateway | No | Default: 24h |
-| `JWT_AUDIENCE` | Gateway | No | Default: prophet-api |
+| `JWT_AUDIENCE` | Gateway | No | Default: QEVRYN-api |
 | `AI_API_KEY` | Intelligence | AI features | OpenAI API key |
 | `AI_PROVIDER` | Intelligence | No | Default: openai |
 | `AI_API_KEY` | Intelligence | AI features | OpenAI API key |
 | `CORS_ALLOWED_ORIGINS` | Intelligence | Production | Comma-separated origins |
 | `MARKET_ENGINE_BIN` | Worker | Yes | Path to built Rust binary |
-| `PROPHET_SYNC_INTERVAL_SECONDS` | Worker | No | Default 300s (5min) |
+| `QEVRYN_SYNC_INTERVAL_SECONDS` | Worker | No | Default 300s (5min) |
 | `WORKER_ADVISORY_LOCK_KEY` | Worker | No | Default: 0x50524F5048455445 |
 | `JWT_SECRET` | Gateway | Yes | JWT signing secret |
 | `JWT_EXPIRY` | Gateway | No | Default: 24h |
-| `JWT_AUDIENCE` | Gateway | No | Default: prophet-api |
+| `JWT_AUDIENCE` | Gateway | No | Default: QEVRYN-api |
 | `INTELLIGENCE_SERVICE_URL` | Gateway | No | Default: http://localhost:8001 |
 | `AI_API_KEY` | Intelligence | AI features | OpenAI API key |
 | `AI_PROVIDER` | Intelligence | No | Default: openai |

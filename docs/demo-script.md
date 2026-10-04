@@ -1,9 +1,9 @@
-# Prophet — Demo Script
+# QEVRYN — Demo Script
 
 ## Demo Overview
 **Duration:** ~3 minutes  
 **Target Audience:** Technical judges, investors, potential users  
-**Core Message:** "Prophet turns prediction-market noise into structured intelligence — with deterministic signals, grounded AI, and human-controlled trading."
+**Core Message:** "QEVRYN turns prediction-market noise into structured intelligence — with deterministic signals, grounded AI, and human-controlled trading."
 
 ---
 
@@ -35,7 +35,7 @@ cd apps/web && npm run dev
 
 ### Environment Variables
 ```bash
-export DATABASE_URL="postgresql://prophet:prophet@localhost:5432/prophet"
+export DATABASE_URL="postgresql://QEVRYN:QEVRYN@localhost:5432/QEVRYN"
 export PANTA_API_KEY="your-panta-api-key"
 export PANTA_API_BASE_URL="https://live-api.panta.market/api/v1/"
 export SOLANA_RPC_URL="https://api.mainnet-beta.solana.com"
@@ -61,7 +61,7 @@ curl -f http://localhost:8001/health
 - Chrome/Edge/Firefox latest
 - DevTools closed (or docked)
 - Single tab open to `http://localhost:3000`
-- No other Prophet tabs open
+- No other QEVRYN tabs open
 
 ---
 
@@ -70,7 +70,7 @@ curl -f http://localhost:8001/health
 ### 0:00 — OPEN COMMAND CENTER
 **Action:** Open `http://localhost:3000`
 
-**Say:** "Prophet is designed to answer one question: What does the market think happens next?"
+**Say:** "QEVRYN is designed to answer one question: What does the market think happens next?"
 
 **Show:**
 - Page loads at `/` (Command Center)
@@ -194,7 +194,7 @@ Show all services with real health checks.
 
 ### 3:10 — CLOSE
 
-**Say:** "Prophet is production-ready. All core workflows work end-to-end. The code is open for review. We're ready for mainnet."
+**Say:** "QEVRYN is production-ready. All core workflows work end-to-end. The code is open for review. We're ready for mainnet."
 
 **Open:** GitHub repo, docs, demo runbook
 

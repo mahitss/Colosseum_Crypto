@@ -64,7 +64,7 @@ The shared Go types keep formats distinct: `HumanUSDC` is a human-readable decim
 
 ## Custody and limitations
 
-The backend never receives a user's private key or seed phrase. When trading is implemented later, Panta will build unsigned transactions/instructions, the user wallet will sign, the transaction will be broadcast through the chosen Solana RPC, and Prophet will report only the resulting signature to Panta. This flow is not implemented here.
+The backend never receives a user's private key or seed phrase. When trading is implemented later, Panta will build unsigned transactions/instructions, the user wallet will sign, the transaction will be broadcast through the chosen Solana RPC, and QEVRYN will report only the resulting signature to Panta. This flow is not implemented here.
 
 No Redis cache, trading, wallet signing, AI, market creation, order submission, positions, or claims are included. Market detail prices can be absent when Panta's RPC data is unavailable. Automated tests use `httptest`; the live smoke test is manual and requires a valid key.
 
@@ -75,3 +75,4 @@ No Redis cache, trading, wallet signing, AI, market creation, order submission, 
 - [Get market](https://docs.panta.market/api-reference/markets/get)
 - [Authentication](https://docs.panta.market/guides/authentication)
 - [Errors and rate limits](https://docs.panta.market/guides/errors)
+

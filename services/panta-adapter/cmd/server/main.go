@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"prophet/panta-adapter/internal/client"
-	"prophet/panta-adapter/internal/config"
-	"prophet/panta-adapter/internal/transport"
+	"qevryn/panta-adapter/internal/client"
+	"qevryn/panta-adapter/internal/config"
+	"qevryn/panta-adapter/internal/transport"
 )
 
 func main() {
@@ -52,3 +52,4 @@ func main() {
 		os.Exit(1)
 	}
 }
+

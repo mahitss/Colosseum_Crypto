@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	adapter "prophet/gateway/internal/markets"
-	"prophet/types"
+	adapter "qevryn/gateway/internal/markets"
+	"qevryn/types"
 )
 
 type fakeMarkets struct {
@@ -89,3 +89,4 @@ func TestMarketServiceStatusMappings(t *testing.T) {
 func contains(value, substring string) bool {
 	return strings.Contains(value, substring)
 }
+

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"prophet/gateway/internal/marketstudio"
-	"prophet/gateway/internal/requestid"
-	"prophet/types"
+	"qevryn/gateway/internal/marketstudio"
+	"qevryn/gateway/internal/requestid"
+	"qevryn/types"
 )
 
 const (
@@ -189,3 +189,4 @@ func writeJSONResponse(w http.ResponseWriter, status int, value any) {
 func writeMarketError(w http.ResponseWriter, status int, code, message string) {
 	writeJSONResponse(w, status, types.ErrorResponse{Code: code, Message: message})
 }
+

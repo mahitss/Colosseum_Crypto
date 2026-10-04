@@ -165,7 +165,7 @@ docker compose -f infrastructure/docker-compose.dev.yml up -d postgres redis
 cd services/market-engine && cargo build --release
 
 # 3. Export env vars (see .env.example)
-export DATABASE_URL="postgresql://prophet:prophet@localhost:5432/prophet"
+export DATABASE_URL="postgresql://QEVRYN:QEVRYN@localhost:5432/QEVRYN"
 export PANTA_API_KEY="your-key"
 export PANTA_API_BASE_URL="https://live-api.panta.market/api/v1/"
 export SOLANA_RPC_URL="https://api.mainnet-beta.solana.com"

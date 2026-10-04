@@ -1,4 +1,4 @@
-# Prophet — Hackathon Submission Package Verification
+# QEVRYN — Hackathon Submission Package Verification
 
 ## Repository Status
 

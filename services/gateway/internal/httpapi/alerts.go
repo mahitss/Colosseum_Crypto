@@ -53,8 +53,8 @@ import (
 	"strconv"
 	"strings"
 
-	"prophet/gateway/internal/intelligence"
-	"prophet/types"
+	"qevryn/gateway/internal/intelligence"
+	"qevryn/types"
 )
 
 const (
@@ -597,3 +597,4 @@ func logAlertRuleName(path, message string, rule *intelligence.AlertRule) {
 		slog.Int("name_len", len(rule.Name)),
 	)
 }
+

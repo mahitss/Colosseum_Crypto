@@ -138,7 +138,7 @@ Currently: **Not used in hot path.** Reserved for:
 - Mature wallet ecosystem (Phantom, Solflare, Backpack, etc.)
 - RPC infrastructure
 
-**What Prophet does on Solana:**
+**What QEVRYN does on Solana:**
 - Broadcasts user-signed transactions (via configured RPC)
 - Polls for confirmation (`getSignatureStatuses`)
 - Reports signature to Panta for verification
@@ -156,7 +156,7 @@ Currently: **Not used in hot path.** Reserved for:
 
 **Why not build our own market protocol?**
 - Panta solves the hard parts: liquidity bootstrapping, AMM math, on-chain settlement, dispute resolution
-- Prophet's value is **intelligence on top**, not reinventing the market protocol
+- QEVRYN's value is **intelligence on top**, not reinventing the market protocol
 - Panta handles regulatory/compliance for the market layer
 
 ---

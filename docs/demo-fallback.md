@@ -1,4 +1,4 @@
-# Prophet — Demo Fallback Plan
+# QEVRYN — Demo Fallback Plan
 
 ## Principle
 

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"prophet/types"
+	"qevryn/types"
 )
 
 func NormalizeMarket(source types.Market) (Market, error) {
@@ -111,3 +111,4 @@ func compareDecimal(left, right *string) (bool, error) {
 }
 
 func stringPointer(value string) *string { return &value }
+

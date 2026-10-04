@@ -1,4 +1,4 @@
-# Prophet — Judge Journey
+# QEVRYN — Judge Journey
 
 ## 60-Second First Impression
 

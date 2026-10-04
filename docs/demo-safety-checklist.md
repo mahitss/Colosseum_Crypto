@@ -1,4 +1,4 @@
-# Prophet — Demo Safety Checklist
+# QEVRYN — Demo Safety Checklist
 
 ## Pre-Demo Verification (T-30 min)
 
@@ -10,7 +10,7 @@
 
 ### Environment Variables Set
 ```bash
-export DATABASE_URL="postgresql://prophet:prophet@localhost:5432/prophet"
+export DATABASE_URL="postgresql://QEVRYN:QEVRYN@localhost:5432/QEVRYN"
 export PANTA_API_KEY="your-panta-api-key"
 export PANTA_API_BASE_URL="https://live-api.panta.market/api/v1/"
 export SOLANA_RPC_URL="https://api.mainnet-beta.solana.com"
@@ -25,7 +25,7 @@ export AI_API_KEY="your-openai-key"
 export INTELLIGENCE_SERVICE_URL="http://localhost:8001"
 export JWT_SECRET="your-jwt-secret"
 export JWT_EXPIRY="24h"
-export JWT_AUDIENCE="prophet-api"
+export JWT_AUDIENCE="QEVRYN-api"
 export CORS_ALLOWED_ORIGINS="http://localhost:3000"
 ```
 
@@ -40,7 +40,7 @@ export CORS_ALLOWED_ORIGINS="http://localhost:3000"
 - [ ] `curl -f http://localhost:8080/health/live` → `{"status":"ok"}`
 - [ ] `curl -f http://localhost:8080/health/ready` → `{"status":"ready"}`
 - [ ] `curl -f http://localhost:8081/health` → `{"status":"ok"}`
-- [ ] `curl -f http://localhost:8001/health` → `{"status":"ok","service":"prophet-intelligence"}`
+- [ ] `curl -f http://localhost:8001/health` → `{"status":"ok","service":"QEVRYN-intelligence"}`
 
 ### Wallet
 - [ ] Phantom or Solflare installed
@@ -52,7 +52,7 @@ export CORS_ALLOWED_ORIGINS="http://localhost:3000"
 - [ ] Chrome/Edge/Firefox latest
 - [ ] DevTools closed (or docked)
 - [ ] Single tab open to `http://localhost:3000`
-- [ ] No other Prophet tabs open
+- [ ] No other QEVRYN tabs open
 - [ ] Incognito/private window (clean state)
 
 ---

@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"prophet/gateway/internal/intelligence"
-	"prophet/gateway/internal/markets"
+	"qevryn/gateway/internal/intelligence"
+	"qevryn/gateway/internal/markets"
 )
 
 func main() {
@@ -62,3 +62,4 @@ func fatal(message string) {
 	fmt.Fprintln(os.Stderr, message)
 	os.Exit(1)
 }
+
