@@ -13,7 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
-import { Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 export default function MarketsPage() {
@@ -21,23 +21,12 @@ export default function MarketsPage() {
   const [cursor, setCursor] = React.useState<string | undefined>();
   const [statusFilter, setStatusFilter] = React.useState<string>('');
   const [categoryFilter, setCategoryFilter] = React.useState<string>('');
-  const [sortBy, setSortBy] = React.useState<'updated' | 'volume' | 'probability'>('updated');
-  const [sortDir, setSortDir] = React.useState<'asc' | 'desc'>('desc');
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['markets', { cursor, search: debouncedSearch, status: statusFilter, category: categoryFilter, sortBy, sortDir }],
-    queryFn: () => getMarkets({ cursor, search: debouncedSearch, status: statusFilter, category: categoryFilter, sortBy, sortDir, limit: 20 }),
+    queryKey: ['markets', { cursor, search: debouncedSearch, status: statusFilter, category: categoryFilter }],
+    queryFn: () => getMarkets({ cursor, search: debouncedSearch, status: statusFilter, category: categoryFilter, limit: 20 }),
   });
-
-  const handleSort = (field: 'updated' | 'volume' | 'probability') => {
-    if (sortBy === field) {
-      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortDir('desc');
-    }
-  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -100,31 +89,11 @@ export default function MarketsPage() {
                 <option value="other">Other</option>
               </select>
             </div>
-
-            {/* Sort */}
-            <div className="flex items-center gap-2 sm:ml-auto">
-              <label htmlFor="sort-by" className="sr-only">Sort by</label>
-              <select
-                id="sort-by"
-                value={`${sortBy}:${sortDir}`}
-                onChange={(e) => {
-                  const [field, dir] = e.target.value.split(':');
-                  setSortBy(field as 'updated' | 'volume' | 'probability');
-                  setSortDir(dir as 'asc' | 'desc');
-                }}
-                className="h-10 appearance-none rounded-md border border-slate-700 bg-slate-900 py-0 pl-3 pr-8 text-sm text-slate-100 outline-none transition-colors hover:border-slate-600 focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/25"
-              >
-                <option value="updated:desc">Updated ↓</option>
-                <option value="updated:asc">Updated ↑</option>
-                <option value="volume:desc">Volume ↓</option>
-                <option value="volume:asc">Volume ↑</option>
-                <option value="probability:desc">Probability ↓</option>
-                <option value="probability:asc">Probability ↑</option>
-              </select>
-              <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(''); setStatusFilter(''); setCategoryFilter(''); setSortBy('updated'); setSortDir('desc'); }} className="h-10">
-                Clear filters
-              </Button>
-            </div>
+            
+            {/* Clear Filters */}
+            <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(''); setStatusFilter(''); setCategoryFilter(''); }} className="h-10">
+              Clear filters
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -141,7 +110,7 @@ export default function MarketsPage() {
                 </span>
               )}
             </div>
-          </CardHeader>
+          </div>
         </CardHeader>
         <CardContent className="pb-4">
           {isLoading ? (
@@ -166,30 +135,18 @@ export default function MarketsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="cursor-pointer select-none" onClick={() => handleSort('updated')}>
-                      <div className="flex items-center gap-1">
-                        Market
-                        {sortBy === 'updated' && (sortDir === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}
-                      </div>
+                    <TableHead>
+                      Market
                     </TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="cursor-pointer select-none" onClick={() => handleSort('probability')}>
-                      <div className="flex items-center gap-1 justify-end">
-                        YES
-                        {sortBy === 'probability' && (sortDir === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}
-                      </div>
+                    <TableHead className="text-right">
+                      YES
                     </TableHead>
-                    <TableHead className="cursor-pointer select-none" onClick={() => handleSort('probability')}>
-                      <div className="flex items-center gap-1 justify-end">
-                        NO
-                        {sortBy === 'probability' && (sortDir === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}
-                      </div>
+                    <TableHead className="text-right">
+                      NO
                     </TableHead>
-                    <TableHead className="cursor-pointer select-none" onClick={() => handleSort('volume')}>
-                      <div className="flex items-center gap-1 justify-end">
-                        Volume
-                        {sortBy === 'volume' && (sortDir === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
-                      </div>
+                    <TableHead className="text-right">
+                      Volume
                     </TableHead>
                     <TableHead>Updated</TableHead>
                   </TableRow>

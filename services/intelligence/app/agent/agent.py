@@ -244,7 +244,7 @@ def create_agent(provider_name: str = "openai") -> CopilotAgent:
     Create a Copilot agent with the specified provider.
     
     Args:
-        provider_name: Name of the AI provider (openai, etc.)
+        provider_name: Name of the AI provider (openai, openrouter)
         
     Returns:
         CopilotAgent instance
@@ -252,11 +252,12 @@ def create_agent(provider_name: str = "openai") -> CopilotAgent:
     # Get configuration from environment
     ai_api_key = os.getenv("AI_API_KEY", "")
     ai_model = os.getenv("AI_MODEL", "gpt-4o-mini")
+    ai_base_url = os.getenv("AI_BASE_URL", "")
     postgres_url = os.getenv("DATABASE_URL", "")
     
     # Create provider
-    if provider_name == "openai":
-        provider = OpenAIProvider(model=ai_model, api_key=ai_api_key)
+    if provider_name in ("openai", "openrouter"):
+        provider = OpenAIProvider(model=ai_model, api_key=ai_api_key, base_url=ai_base_url)
     else:
         raise ValueError(f"Unknown provider: {provider_name}")
     

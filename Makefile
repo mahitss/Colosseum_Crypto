@@ -1,9 +1,9 @@
-.PHONY: dev test lint build panta-smoke worker worker-build
+.PHONY: dev test lint build panta-smoke worker worker-build market-engine-cross
 
 DEV_COMPOSE := infrastructure/docker-compose.dev.yml
 
 help:
-	@echo "Available targets: dev, test, lint, build, panta-smoke, worker, worker-build"
+	@echo "Available targets: dev, test, lint, build, panta-smoke, worker, worker-build, market-engine-cross"
 
 default: help
 
@@ -42,6 +42,13 @@ build:
 worker-build:
 	cd services/gateway && go build -o bin/worker ./cmd/worker
 	cargo build --release --manifest-path services/market-engine/Cargo.toml
+
+# market-engine-cross builds the market-engine for Windows using Docker cross-compilation.
+# Use this on Windows/macOS/Linux when MSVC/Visual Studio is not available locally.
+# Requires Docker. Outputs to services/market-engine/target/x86_64-pc-windows-gnu/release/market-engine.exe
+market-engine-cross:
+	docker build -f services/market-engine/Dockerfile.cross -t market-engine-cross .
+	docker run --rm -v $(shell pwd):/src market-engine-cross cp /market-engine.exe services/market-engine/target/x86_64-pc-windows-gnu/release/market-engine.exe
 
 # worker runs the alert-ingestion worker in the foreground. It requires
 # DATABASE_URL and MARKET_ENGINE_BIN; see docs/watchlists-alerts.md.

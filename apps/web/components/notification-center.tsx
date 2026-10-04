@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Bell, CheckCheck, X } from 'lucide-react';
+import { Bell, CheckCheck } from 'lucide-react';
 import {
   getNotifications,
   getUnreadCount,
@@ -164,7 +164,7 @@ export function NotificationCenter() {
                   )}
                 >
                   <span
-                    className={cn('mt-0.5 h-8 w-[3px] shrink-0 rounded-full', SEVERITY_BAR[notification.severity as Severity])}
+                    className={cn('mt-0.5 h-8 w-[3px] shrink-0 rounded-full', SEVERITY_BAR[notification.severity])}
                     title={formatSeverityLabel(notification.severity)}
                   />
                   <span className="min-w-0 flex-1">
@@ -189,8 +189,8 @@ export function NotificationCenter() {
                     </span>
                   </span>
                 </button>
-              ))}
-            )}
+              )))
+            }
           </div>
         </div>
       )}

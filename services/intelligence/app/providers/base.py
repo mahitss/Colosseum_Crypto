@@ -1,8 +1,17 @@
 """AI Provider abstraction for Prophet Copilot."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
+
+
+class ToolCall(BaseModel):
+    """A tool call made by the agent."""
+    name: str
+    arguments: Dict[str, Any]
+    result: Optional[Any] = None
 
 
 class AIResponse(BaseModel):
@@ -12,13 +21,7 @@ class AIResponse(BaseModel):
     model: str
     provider: str
     usage: Optional[Dict[str, Any]] = None
-
-
-class ToolCall(BaseModel):
-    """A tool call made by the agent."""
-    name: str
-    arguments: Dict[str, Any]
-    result: Optional[Any] = None
+    tool_calls: Optional[List[ToolCall]] = None
 
 
 class AIProvider(ABC):

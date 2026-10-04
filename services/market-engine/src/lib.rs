@@ -243,6 +243,7 @@ pub fn classify_signal_severity(
     config: &SignalConfig,
 ) -> Result<Severity, EngineError> {
     let magnitude = Fixed::parse(magnitude)?.abs()?;
+    let minor = Fixed::parse(&config.probability_shift_minor)?;
     let significant = Fixed::parse(&config.probability_shift_significant)?;
     let major = Fixed::parse(&config.probability_shift_major)?;
     if minor.0 <= 0 || significant < minor || major < significant {

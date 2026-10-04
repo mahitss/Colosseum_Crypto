@@ -127,7 +127,8 @@ function CommandCenterContent() {
               View all
               <ExternalLink className="w-3 h-3" />
             </Link>
-          </CardHeader>
+          </div>
+        </CardHeader>
           <CardContent>
             {!signals || signals.signals.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -187,12 +188,11 @@ function CommandCenterContent() {
                 </TableBody>
               </Table>
             )}
-          </CardContent>
+</CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
 export default function CommandCenterPage() {
   return <CommandCenterContent />;

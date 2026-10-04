@@ -43,3 +43,4 @@ contracts/evm/lib/
 
 # Misc
 *.log
+.neon

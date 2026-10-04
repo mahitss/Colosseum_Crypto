@@ -92,8 +92,9 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ i
               <CardDescription>Historical YES probability for this market</CardDescription>
             </div>
             <Badge variant="outline" className="text-xs">{observations.length} observations</Badge>
-          </CardHeader>
-          <CardContent>
+          </div>
+        </CardHeader>
+        <CardContent>
             {!hasHistory ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Activity className="w-8 h-8 mx-auto mb-3 text-slate-500" />
@@ -119,8 +120,9 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ i
               <CardDescription>Recent signals for this market</CardDescription>
             </div>
             <Badge variant="outline" className="text-xs">{signals.length} signals</Badge>
-          </CardHeader>
-          <CardContent>
+          </div>
+        </CardHeader>
+        <CardContent>
             {signals.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No signals yet for this market.
@@ -209,11 +211,4 @@ function getSeverityVariant(severity: string): 'info' | 'warning' | 'success' | 
     case 'CRITICAL': return 'critical';
     default: return 'info';
   }
-}
-
-function formatVolume(volume: string): string {
-  const num = parseFloat(volume);
-  if (num >= 1e6) return `$${(num / 1e6).toFixed(1)}M`;
-  if (num >= 1e3) return `$${(num / 1e3).toFixed(1)}K`;
-  return `$${num.toFixed(0)}`;
 }

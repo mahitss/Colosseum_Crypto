@@ -1,0 +1,38 @@
+# Cross-compilation Dockerfile for market-engine
+# Builds Windows x86_64 binary from Linux using mingw-w64
+# Usage: docker build -f Dockerfile.cross -t market-engine-cross . && docker run --rm -v $(pwd):/src market-engine-cross
+
+FROM debian:bookworm-slim AS builder
+
+# Install mingw-w64 cross-compiler and Rust
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    mingw-w64 \
+    pkg-config \
+    libssl-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Add Windows GNU target
+RUN rustup target add x86_64-pc-windows-gnu
+
+# Configure cargo to use mingw linker
+RUN mkdir -p /root/.cargo
+RUN echo '[target.x86_64-pc-windows-gnu]\nlinker = "x86_64-w64-mingw32-gcc"\nar = "x86_64-w64-mingw32-gcc-ar"\n' > /root/.cargo/config.toml
+
+WORKDIR /app
+
+# Copy source
+COPY services/market-engine/Cargo.toml services/market-engine/Cargo.lock ./
+COPY services/market-engine/src ./src
+
+# Build for Windows
+RUN cargo build --release --target x86_64-pc-windows-gnu
+
+# Final stage - just copy the binary
+FROM scratch AS output
+COPY --from=builder /app/target/x86_64-pc-windows-gnu/release/market-engine.exe /market-engine.exe

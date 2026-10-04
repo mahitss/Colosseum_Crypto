@@ -193,6 +193,37 @@ func TestGetPositionsSuccess(t *testing.T) {
 	}
 }
 
+func TestGetAccountSuccess(t *testing.T) {
+	server := pantaTestServer(t, http.StatusOK, `{
+		"userId":"user-123","email":"test@example.com","name":"Test User",
+		"status":"active","canCreateMarkets":true,"createdAt":"2026-01-01T00:00:00Z","apiKeyId":"key-1"
+	}`)
+	defer server.Close()
+
+	c := newPantaTestClient(t, server.URL)
+	account, err := c.GetAccount(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if account.UserID != "user-123" {
+		t.Errorf("expected user-123, got %s", account.UserID)
+	}
+	if account.Status != "active" {
+		t.Errorf("expected active, got %s", account.Status)
+	}
+}
+
+func TestGetAccountMalformed(t *testing.T) {
+	server := pantaTestServer(t, http.StatusOK, `{}`)
+	defer server.Close()
+
+	c := newPantaTestClient(t, server.URL)
+	_, err := c.GetAccount(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "malformed") {
+		t.Fatalf("expected malformed error, got %v", err)
+	}
+}
+
 func TestNewPantaHTTPClientRequiresKey(t *testing.T) {
 	if _, err := NewPantaHTTPClient("https://live-api.panta.market/api/v1/", "", 5*time.Second); err == nil {
 		t.Fatal("expected error for empty API key")

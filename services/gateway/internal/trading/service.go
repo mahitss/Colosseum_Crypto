@@ -22,6 +22,7 @@ type PantaClient interface {
 	ReportTransaction(ctx context.Context, marketID, side, amountUSDC, signature, quoteReference string) (string, error)
 	VerifyTransaction(ctx context.Context, signature string) (PantaVerification, error)
 	GetPositions(ctx context.Context, walletPubkey string) ([]PantaPosition, error)
+	GetAccount(ctx context.Context) (PantaAccount, error)
 }
 
 // PantaQuote mirrors the documented Panta quote schema.
@@ -62,6 +63,17 @@ type PantaPosition struct {
 	Status      string `json:"status"`
 }
 
+// PantaAccount mirrors the Panta account response for authentication validation.
+type PantaAccount struct {
+	UserID           string `json:"userId"`
+	Email            string `json:"email"`
+	Name             string `json:"name"`
+	Status           string `json:"status"`
+	CanCreateMarkets bool   `json:"canCreateMarkets"`
+	CreatedAt        string `json:"createdAt"`
+	APIKeyID         string `json:"apiKeyId"`
+}
+
 // PantaHTTPClient is the production implementation of PantaClient.
 type PantaHTTPClient struct {
 	baseURL    string
@@ -80,10 +92,16 @@ func NewPantaHTTPClient(baseURL, apiKey string, timeout time.Duration) (*PantaHT
 	if timeout <= 0 {
 		timeout = 30 * time.Second
 	}
+	httpClient := &http.Client{
+		Timeout: timeout,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 	return &PantaHTTPClient{
 		baseURL:    strings.TrimRight(baseURL, "/") + "/",
 		apiKey:     apiKey,
-		httpClient: &http.Client{Timeout: timeout},
+		httpClient: httpClient,
 	}, nil
 }
 
@@ -200,6 +218,18 @@ func (c *PantaHTTPClient) GetPositions(ctx context.Context, walletPubkey string)
 		return nil, err
 	}
 	return result.Positions, nil
+}
+
+func (c *PantaHTTPClient) GetAccount(ctx context.Context) (PantaAccount, error) {
+	var account PantaAccount
+	err := c.doJSON(ctx, http.MethodGet, "account/", nil, &account)
+	if err != nil {
+		return PantaAccount{}, err
+	}
+	if account.UserID == "" || account.Status == "" {
+		return PantaAccount{}, errors.New("Panta account response malformed")
+	}
+	return account, nil
 }
 
 // Service orchestrates the full trade lifecycle.

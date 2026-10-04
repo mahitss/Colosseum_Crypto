@@ -52,19 +52,6 @@ export function TopBar() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/markets?search=${encodeURIComponent(searchQuery)}`);
-      setShowSearch(false);
-    }
-  };
-
-  const walletAddress = publicKey ?? '';
-  const shortAddress = walletAddress
-    ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`
-    : '';
-
   return (
     <header className="h-14 bg-slate-900/80 backdrop-blur-sm border-b border-slate-800/60 sticky top-0 z-30 flex items-center justify-between px-4">
       {/* Search */}

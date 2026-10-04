@@ -1,0 +1,12 @@
+# Local Windows development configuration
+# Uses C:\mingw64 MinGW instead of rustup's GNU toolchain
+# This provides the Windows CRT libraries needed for linking
+
+[target.x86_64-pc-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
+ar = "x86_64-w64-mingw32-ar"
+
+[env]
+# Point to the WinLibs MinGW installation
+CC_x86_64_pc_windows_gnu = "C:\\mingw64\\mingw64\\bin\\x86_64-w64-mingw32-gcc.exe"
+AR_x86_64_pc_windows_gnu = "C:\\mingw64\\mingw64\\bin\\x86_64-w64-mingw32-ar.exe"

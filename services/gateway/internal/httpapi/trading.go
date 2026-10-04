@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"prophet/gateway/internal/ratelimit"
@@ -130,9 +132,98 @@ func writeTradeError(w http.ResponseWriter, err error) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": code, "detail": err.Error()})
 }
 
+// sanitizeError maps Panta errors to safe error codes without exposing credentials.
+func sanitizeError(err error) string {
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "authentication"):
+		return "UPSTREAM_AUTHENTICATION_FAILED"
+	case strings.Contains(msg, "rate limit"):
+		return "UPSTREAM_RATE_LIMITED"
+	case strings.Contains(msg, "unavailable"):
+		return "UPSTREAM_UNAVAILABLE"
+	case strings.Contains(msg, "malformed"):
+		return "UPSTREAM_MALFORMED_RESPONSE"
+	case strings.Contains(msg, "timeout"):
+		return "UPSTREAM_TIMEOUT"
+	case strings.Contains(msg, "rejected"):
+		return "UPSTREAM_REJECTED"
+	default:
+		return "UPSTREAM_ERROR"
+	}
+}
+
 func registerTradingRoutes(mux *http.ServeMux, trades TradeService) {
 	if trades == nil {
 		return
+	}
+
+	// Panta smoke test: read-only authentication + optional positions check.
+	// Only enabled when PANTA_SMOKE_TEST_ENABLED=true (never in CI).
+	if os.Getenv("PANTA_SMOKE_TEST_ENABLED") == "true" {
+		// A. Authentication/connectivity test - no wallet required
+		mux.HandleFunc("GET /api/v1/panta/smoke-test", func(w http.ResponseWriter, r *http.Request) {
+			account, err := trades.(interface{ GetAccount(context.Context) (trading.PantaAccount, error) }).GetAccount(r.Context())
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadGateway)
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"status":         "failed",
+					"test":           "authentication",
+					"endpoint":       "GET /api/v1/account/",
+					"error_code":     sanitizeError(err),
+					"message":        err.Error(),
+				})
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"status":     "ok",
+				"test":       "authentication",
+				"endpoint":   "GET /api/v1/account/",
+				"user_id":    account.UserID,
+				"api_key_id": account.APIKeyID,
+				"acct_status": account.Status,
+			})
+		})
+
+		// B. Wallet-specific positions test - only runs when WALLET_ADDRESS is set
+		mux.HandleFunc("GET /api/v1/panta/smoke-test/positions", func(w http.ResponseWriter, r *http.Request) {
+			wallet := os.Getenv("WALLET_ADDRESS")
+			if wallet == "" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				_ = json.NewEncoder(w).Encode(map[string]string{
+					"status":  "skipped",
+					"test":    "positions",
+					"detail":  "SKIPPED: no wallet address supplied",
+				})
+				return
+			}
+			positions, err := trades.RefreshPositions(r.Context(), wallet)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadGateway)
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"status":     "failed",
+					"test":       "positions",
+					"endpoint":   "GET /api/v1/positions/?wallet=" + wallet[:4] + "..." + wallet[len(wallet)-4:],
+					"error_code": sanitizeError(err),
+					"message":    err.Error(),
+				})
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"status":     "ok",
+				"test":       "positions",
+				"endpoint":   "GET /api/v1/positions/?wallet=" + wallet[:4] + "..." + wallet[len(wallet)-4:],
+				"positions":  len(positions),
+				"wallet":     wallet[:4] + "..." + wallet[len(wallet)-4:],
+			})
+		})
 	}
 
 	mux.HandleFunc("POST /api/v1/trades/quote", ratelimitMiddleware(tradesQuoteLimiter, func(w http.ResponseWriter, r *http.Request) {

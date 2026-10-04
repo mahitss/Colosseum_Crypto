@@ -60,6 +60,21 @@ interface AdapterModules {
   wallets: unknown[];
 }
 
+const WalletBridge = ({ inner, adapters }: { inner: ReactNode; adapters: AdapterModules }) => {
+  const w = adapters.useWallet();
+  const value: WalletAPI = {
+    available: true,
+    loading: false,
+    connected: w.connected,
+    connecting: w.connecting,
+    publicKey: w.publicKey ? w.publicKey.toBase58() : null,
+    signTransaction: (w.signTransaction as WalletAPI['signTransaction']) || null,
+    connect: useCallback(() => w.connect(), [w]),
+    disconnect: useCallback(() => w.disconnect(), [w]),
+  };
+  return <WalletContext.Provider value={value}>{inner}</WalletContext.Provider>;
+};
+
 export function WalletProviderConfig({ children }: { children: ReactNode }) {
   const [adapters, setAdapters] = useState<AdapterModules | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,7 +110,7 @@ export function WalletProviderConfig({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, []);
-
+  
   if (!adapters) {
     return (
       <WalletContext.Provider value={{ ...UNAVAILABLE, loading }}>
@@ -110,26 +125,11 @@ export function WalletProviderConfig({ children }: { children: ReactNode }) {
       ? 'https://api.devnet.solana.com'
       : 'https://api.mainnet-beta.solana.com');
 
-  const WalletBridge = ({ inner }: { inner: ReactNode }) => {
-    const w = adapters.useWallet();
-    const value: WalletAPI = {
-      available: true,
-      loading: false,
-      connected: w.connected,
-      connecting: w.connecting,
-      publicKey: w.publicKey ? w.publicKey.toBase58() : null,
-      signTransaction: (w.signTransaction as WalletAPI['signTransaction']) || null,
-      connect: useCallback(() => w.connect(), [w]),
-      disconnect: useCallback(() => w.disconnect(), [w]),
-    };
-    return <WalletContext.Provider value={value}>{inner}</WalletContext.Provider>;
-  };
-
   return (
     <adapters.ConnectionProvider endpoint={endpoint}>
       <adapters.WalletProvider wallets={adapters.wallets} autoConnect={false}>
         <adapters.WalletModalProvider>
-          <WalletBridge inner={children} />
+          <WalletBridge adapters={adapters} inner={children} />
         </adapters.WalletModalProvider>
       </adapters.WalletProvider>
     </adapters.ConnectionProvider>

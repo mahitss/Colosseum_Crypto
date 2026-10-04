@@ -1,4 +1,4 @@
-"""OpenAI provider implementation for Prophet Copilot."""
+"""OpenAI/OpenRouter provider implementation for Prophet Copilot."""
 
 import os
 from typing import Any, Dict, List, Optional
@@ -14,13 +14,16 @@ except ImportError:
 
 
 class OpenAIProvider(AIProvider):
-    """OpenAI provider implementation."""
+    """OpenAI/OpenRouter provider implementation. OpenRouter uses OpenAI-compatible API."""
     
-    def __init__(self, model: str, api_key: str):
+    def __init__(self, model: str, api_key: str, base_url: str = ""):
         if not openai:
             raise ImportError("openai package is required. Install with: pip install openai")
         super().__init__(model, api_key)
-        self.client = openai.AsyncOpenAI(api_key=api_key)
+        self.client = openai.AsyncOpenAI(
+            api_key=api_key,
+            base_url=base_url if base_url else None,
+        )
     
     async def generate(
         self,
@@ -52,9 +55,14 @@ class OpenAIProvider(AIProvider):
         tool_calls = []
         if response.choices[0].message.tool_calls:
             for tc in response.choices[0].message.tool_calls:
+                import json
+                try:
+                    arguments = json.loads(tc.function.arguments)
+                except (json.JSONDecodeError, TypeError):
+                    arguments = {}
                 tool_calls.append(ToolCall(
                     name=tc.function.name,
-                    arguments=tc.function.arguments,
+                    arguments=arguments,
                 ))
         
         return AIResponse(
@@ -65,6 +73,7 @@ class OpenAIProvider(AIProvider):
                 "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
                 "completion_tokens": response.usage.completion_tokens if response.usage else 0,
             },
+            tool_calls=tool_calls if tool_calls else None,
         )
     
     async def generate_structured(
