@@ -199,7 +199,7 @@ class MarketStudioAgent:
         if not settings.ai_api_key:
             return None
         try:
-            return OpenAIProvider(model="gpt-4o-mini", api_key=settings.ai_api_key)
+            return OpenAIProvider(model=settings.ai_model, api_key=settings.ai_api_key, base_url=settings.ai_base_url)
         except Exception:  # pragma: no cover - provider import/runtime issues
             logger.warning("AI provider unavailable; falling back", exc_info=True)
             return None

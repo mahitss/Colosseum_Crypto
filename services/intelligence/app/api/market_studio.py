@@ -122,7 +122,7 @@ def _report_to_dict(report: ValidationReport) -> Dict[str, Any]:
 # --------------------------------------------------------------------------- #
 
 
-@router.post("/v1/market-studio/interpret", response_model=InterpretResponse)
+@router.post("/market-studio/interpret", response_model=InterpretResponse)
 async def market_studio_interpret(request: InterpretRequest):
     """Turn a natural-language description into a structured market draft.
 
@@ -152,7 +152,7 @@ async def market_studio_interpret(request: InterpretRequest):
     )
 
 
-@router.post("/v1/market-studio/validate", response_model=ValidateResponse)
+@router.post("/market-studio/validate", response_model=ValidateResponse)
 async def market_studio_validate(request: ValidateRequest):
     """Deterministically validate a user-edited draft.
 

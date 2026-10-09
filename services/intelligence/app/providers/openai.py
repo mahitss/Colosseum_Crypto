@@ -49,7 +49,8 @@ class OpenAIProvider(AIProvider):
         
         response = await self.client.chat.completions.create(**params)
         
-        content = response.choices[0].message.content or ""
+        message = response.choices[0].message
+        content = getattr(message, "reasoning", None) or message.content or ""
         
         # Extract tool calls if present
         tool_calls = []
@@ -107,7 +108,8 @@ class OpenAIProvider(AIProvider):
             tool_choice="required" if tools else None,
         )
         
-        content = response.choices[0].message.content or ""
+        message = response.choices[0].message
+        content = getattr(message, "reasoning", None) or message.content or ""
         return AIResponse(
             content=content,
             model=self.model,

@@ -4,7 +4,7 @@
 -- Security notes, enforced by what this table deliberately does NOT have:
 --   * no private key, seed phrase or mnemonic column of any kind
 --   * no signed transaction blob column. The signed payload is relayed
---     directly to the Solana RPC and discarded; only the resulting signature
+--     directly to the Solana RPC and discarded. The resulting signature
 --     is persisted. A signature is a public, non-secret value.
 --
 -- Money is stored exactly as Panta expresses it: USDC base units in integer
@@ -38,8 +38,8 @@ CREATE TABLE market_creation_attempts (
     draft_payload JSONB,
 
     -- Lifecycle. Note that 'confirmed' means Solana confirmed ONLY. The market
-    -- is not live until 'registered' (Panta has indexed it), and it is not
-    -- visible in Prophet until 'indexed'.
+    -- is not live until registered (Panta has indexed it), and it is not
+    -- visible in Qevryn until indexed.
     status TEXT NOT NULL CHECK (status IN (
         'CREATED', 'SIGNED', 'BROADCASTING', 'SUBMITTED', 'CONFIRMING',
         'CONFIRMED', 'REGISTERING', 'REGISTERED', 'INDEXED',
@@ -55,7 +55,7 @@ CREATE TABLE market_creation_attempts (
     -- Public transaction outcome.
     solana_signature TEXT,
 
-    -- Prophet-side identifiers, populated only after authoritative registration.
+    -- Qevryn-side identifiers, populated only after authoritative registration.
     market_id TEXT,
     registered_at TIMESTAMPTZ,
     indexed_at TIMESTAMPTZ,
@@ -71,7 +71,7 @@ CREATE TABLE market_creation_attempts (
     --
     -- create_id is the authority here: Panta assigns one createId per creation
     -- attempt, so it is the natural key. The service also checks this in Go
-    -- before inserting; this constraint is what makes that check safe under
+    -- before inserting. This constraint is what makes that check safe under
     -- concurrency, where two simultaneous quotes could otherwise both pass the
     -- GetByCreateID check and both insert.
     CONSTRAINT market_creation_attempts_idempotency UNIQUE (create_id, draft_hash, wallet_address),

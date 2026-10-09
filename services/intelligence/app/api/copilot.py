@@ -38,7 +38,7 @@ class QueryResponse(BaseModel):
     generated_at: str
 
 
-@router.post("/v1/copilot/query", response_model=QueryResponse)
+@router.post("/copilot/query", response_model=QueryResponse)
 async def copilot_query(request: QueryRequest):
     """
     Process a copilot query.
@@ -75,7 +75,7 @@ async def copilot_query(request: QueryRequest):
         raise HTTPException(status_code=500, detail="Error processing query")
 
 
-@router.get("/v1/copilot/health")
+@router.get("/copilot/health")
 async def copilot_health():
     """Health check for copilot service."""
     return {
