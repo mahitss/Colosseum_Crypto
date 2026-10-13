@@ -70,6 +70,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -99,9 +100,15 @@ const (
 	// database (e.g., staging and prod).
 	defaultWorkerAdvisoryLockKey int64 = 0x50524F5048455445
 
-	// defaultSyncIntervalSeconds is the poll interval used when
-	// PROPHET_SYNC_INTERVAL_SECONDS is unset.
-	defaultSyncIntervalSeconds = 300
+// defaultSyncIntervalSeconds is the poll interval used when
+// PROPHET_SYNC_INTERVAL_SECONDS is unset.
+defaultSyncIntervalSeconds = 300
+
+// defaultMaxSyncPages is the number of Panta catalog pages the syncer fetches.
+// Each page has up to 50 markets; the default of 2 caps at 100 markets.
+// Production catalogs can exceed this, so the value is configurable via
+// PROPHET_MAX_PAGES (clamped to [1, maximumMaxPages]).
+defaultMaxSyncPages = 10
 	// minSyncIntervalSeconds and maxSyncIntervalSeconds bound the configured
 	// interval. The lower bound stops an operator from hammering Panta and
 	// getting the adapter rate-limited; the upper bound keeps the value inside
@@ -135,13 +142,14 @@ const (
 )
 
 type config struct {
-	databaseURL         string
-	adapterURL          string
-	enginePath          string
-	syncInterval        time.Duration
-	tickTimeout         time.Duration
-	bridgeLookback      time.Duration
-	advisoryLockKey     int64
+	databaseURL      string
+	adapterURL       string
+	enginePath       string
+	syncInterval     time.Duration
+	tickTimeout      time.Duration
+	bridgeLookback   time.Duration
+	advisoryLockKey  int64
+	maxSyncPages     int
 }
 
 type tickStats struct {
@@ -225,9 +233,9 @@ func main() {
 		config:     cfg,
 		pool:       pool,
 		repository: repository,
-		syncer: intelligence.NewSyncer(
-			repository, adapterClient, intelligence.RustEngine{Path: cfg.enginePath}, signalConfig,
-		),
+syncer: intelligence.NewSyncer(
+		repository, adapterClient, intelligence.RustEngine{Path: cfg.enginePath}, signalConfig, cfg.maxSyncPages,
+	),
 		evaluator: intelligence.NewAlertEvaluator(repository, intelligence.NewInAppSender(repository)),
 	}
 
@@ -267,8 +275,8 @@ func (w *worker) loop(ctx context.Context) {
 			return
 		}
 
-		ok := w.runTickWithDrain(ctx)
-		if ok {
+		tickErr := w.runTickWithDrain(ctx)
+		if tickErr == nil {
 			consecutiveFailures = 0
 			wait = w.config.syncInterval
 			continue
@@ -277,6 +285,7 @@ func (w *worker) loop(ctx context.Context) {
 		consecutiveFailures++
 		wait = w.retryWait(consecutiveFailures)
 		w.logger.Error("tick failed",
+			slog.String("error", tickErr.Error()),
 			slog.Int("consecutive_failures", consecutiveFailures),
 			slog.Duration("retry_in", wait),
 			slog.Int("max_consecutive_failures", maxConsecutiveFailures))
@@ -312,7 +321,7 @@ func (w *worker) retryWait(consecutiveFailures int) time.Duration {
 	return delay
 }
 
-// runTickWithDrain executes one tick and returns whether it succeeded.
+// runTickWithDrain executes one tick and returns its error, or nil on success.
 //
 // On shutdown the tick is NOT abandoned. The tick runs under its own deadline
 // derived from a background context rather than from the signal context, so a
@@ -323,11 +332,11 @@ func (w *worker) retryWait(consecutiveFailures int) time.Duration {
 // that hangs forever is worse than a shutdown that gives up on one tick. The
 // tick is safe to abandon precisely because of the idempotency described at the
 // top of this file.
-func (w *worker) runTickWithDrain(ctx context.Context) bool {
+func (w *worker) runTickWithDrain(ctx context.Context) error {
 	requestID, err := newRequestID()
 	if err != nil {
 		w.logger.Error("could not create a request id for this tick", slog.String("error", err.Error()))
-		return false
+		return err
 	}
 	// tickCtx is rooted in Background, not in ctx: ctx is cancelled by SIGINT or
 	// SIGTERM, and cancelling it here is exactly the mid-transaction abort this
@@ -344,7 +353,7 @@ func (w *worker) runTickWithDrain(ctx context.Context) bool {
 
 	select {
 	case tickErr := <-results:
-		return tickErr == nil
+		return tickErr
 	case <-ctx.Done():
 		select {
 		case tickErr := <-results:
@@ -358,7 +367,7 @@ func (w *worker) runTickWithDrain(ctx context.Context) bool {
 				slog.Duration("drain_timeout", drainTimeout),
 				slog.Duration("tick_timeout", w.config.tickTimeout))
 		}
-		return true
+		return nil
 	}
 }
 
@@ -443,23 +452,30 @@ func (w *worker) tick(ctx context.Context, requestID string) (tickStats, error) 
 // no-op and the evaluator returns before any rule work.
 func (w *worker) bridgeAndEvaluate(ctx context.Context, requestID string, stats *tickStats) error {
 	log := w.logger.With(slog.String("request_id", requestID))
-	since := time.Now().UTC().Add(-w.config.bridgeLookback)
-	page, err := w.repository.Signals(ctx, intelligence.SignalQuery{
-		From: &since, Limit: maxSignalsPerTick,
-	})
+	// The bridge follows a durable cursor, not a wall-clock window: the
+	// position is the highest signals.id the event stream has recorded, so a
+	// tick that persists signals and then fails before this step is recovered
+	// by the next tick. The previous time-window read (now minus
+	// syncInterval+tickTimeout) silently stranded exactly those signals,
+	// which is why observations and signals persisted while signal_events and
+	// notifications stayed empty.
+	cursor, err := w.repository.LatestBridgedSignalID(ctx)
+	if err != nil {
+		log.Error("could not read the bridge cursor", slog.String("error", err.Error()))
+		return err
+	}
+	signals, err := w.repository.SignalsSince(ctx, cursor, maxSignalsPerTick)
 	if err != nil {
 		log.Error("could not read persisted signals for the bridge pass", slog.String("error", err.Error()))
 		return err
 	}
-	if page.NextCursor != nil {
-		log.Warn("bridge window is full, the oldest signals are deferred to a later tick",
+	if len(signals) == maxSignalsPerTick {
+		log.Warn("bridge backlog exceeds one tick; the oldest unbridged signals continue next tick",
 			slog.Int("max_signals_per_tick", maxSignalsPerTick),
-			slog.Int("signals_in_window", len(page.Items)),
-			slog.Time("window_start", since))
+			slog.Int64("bridged_cursor", cursor))
 	}
-
 	var firstErr error
-	for _, signal := range page.Items {
+	for _, signal := range signals {
 		// A signal read back from the signals table carries the internal
 		// markets.id in MarketID, which is the identity signal_events needs, and
 		// the Panta id in SourceMarketID, which is how the evaluator resolves
@@ -574,7 +590,7 @@ func loadConfig(logger *slog.Logger) (config, error) {
 			slog.String("consequence", "no signals would be produced, so no alerts would ever fire"),
 			slog.String("stat_error", err.Error()))
 		return config{}, fmt.Errorf("MARKET_ENGINE_BIN is set but %q cannot be used: %w", cfg.enginePath, err)
-	} else if info.IsDir() || info.Mode()&0o111 == 0 {
+	} else if info.IsDir() || (runtime.GOOS != "windows" && info.Mode()&0o111 == 0) {
 		logger.Error("the deterministic market engine is unavailable",
 			slog.String("missing_env", "MARKET_ENGINE_BIN"),
 			slog.String("consequence", "no signals would be produced, so no alerts would ever fire"),
@@ -612,10 +628,28 @@ func loadConfig(logger *slog.Logger) (config, error) {
 	if cfg.tickTimeout > maxTickTimeout {
 		cfg.tickTimeout = maxTickTimeout
 	}
-	// One full interval of overlap plus the tick timeout: long enough to cover a
+// One full interval of overlap plus the tick timeout: long enough to cover a
 	// tick that failed right after its sync committed, short enough that the
 	// window stays a small, constant amount of work.
 	cfg.bridgeLookback = cfg.syncInterval + cfg.tickTimeout
+
+	// maxSyncPages: number of Panta catalog pages to fetch per sync.
+	// Each page has up to 50 markets; the default of 2 caps at 100 markets.
+	// Production catalogs can exceed this, so the value is configurable via
+	// PROPHET_MAX_PAGES (clamped to [1, 100]).
+	if raw := strings.TrimSpace(os.Getenv("PROPHET_MAX_PAGES")); raw != "" {
+		maxPages, err := strconv.Atoi(raw)
+		if err != nil {
+			return config{}, fmt.Errorf("PROPHET_MAX_PAGES must be an integer from 1 to 100, got %q", raw)
+		}
+		if maxPages < 1 || maxPages > 100 {
+			return config{}, fmt.Errorf("PROPHET_MAX_PAGES must be from 1 to 100, got %d", maxPages)
+		}
+		cfg.maxSyncPages = maxPages
+	} else {
+		cfg.maxSyncPages = defaultMaxSyncPages
+	}
+
 	return cfg, nil
 }
 

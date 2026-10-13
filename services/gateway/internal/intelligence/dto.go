@@ -1,6 +1,9 @@
 package intelligence
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type MarketSummaryDTO struct {
 	ID               string     `json:"id"`
@@ -10,6 +13,9 @@ type MarketSummaryDTO struct {
 	Description      *string    `json:"description"`
 	Category         *string    `json:"category"`
 	Status           string     `json:"status"`
+	Phase            *string    `json:"phase"`
+	CreatedAt        *time.Time `json:"created_at"`
+	UpdatedAt        *time.Time `json:"updated_at"`
 	YesProbability   *string    `json:"yes_probability"`
 	NoProbability    *string    `json:"no_probability"`
 	VolumeUSDC       *string    `json:"volume_usdc"`
@@ -88,11 +94,13 @@ func ToSignalPageDTO(page SignalPage) SignalPageDTO {
 
 func ToMarketIntelligenceDTO(result MarketIntelligence) MarketIntelligenceDTO {
 	market := result.Market
+	phase := market.Phase
 	response := MarketIntelligenceDTO{
 		Market: MarketSummaryDTO{
 			ID: market.SourceMarketID, Source: market.Source, SourceMarketID: market.SourceMarketID,
 			Title: market.Title, Description: market.Description, Category: market.Category,
-			Status: market.Status, YesProbability: market.YesProbability, NoProbability: market.NoProbability,
+			Status: market.Status, CreatedAt: market.CreatedAt,
+			YesProbability: market.YesProbability, NoProbability: market.NoProbability,
 			VolumeUSDC: market.VolumeUSDC, Liquidity: market.Liquidity,
 			ClosesAt: market.ClosesAt, ResolutionStatus: market.ResolutionStatus,
 		},
@@ -102,6 +110,9 @@ func ToMarketIntelligenceDTO(result MarketIntelligence) MarketIntelligenceDTO {
 			VolumeUSDC: result.CurrentMetrics.VolumeUSDC, Liquidity: result.CurrentMetrics.Liquidity,
 			ObservedAt: result.CurrentMetrics.ObservedAt, InsufficientData: result.CurrentMetrics.InsufficientData,
 		},
+	}
+	if strings.TrimSpace(phase) != "" {
+		response.Market.Phase = &phase
 	}
 	if result.LatestObservation != nil {
 		observation := *result.LatestObservation

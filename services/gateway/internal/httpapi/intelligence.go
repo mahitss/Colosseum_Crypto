@@ -7,15 +7,19 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"qevryn/gateway/internal/intelligence"
 	"qevryn/types"
 )
 
 const maximumSignalLimit = 100
 
+const maximumObservationHistoryLimit = 500
+
 type intelligenceReader interface {
 	Signals(context.Context, intelligence.SignalQuery) (intelligence.SignalPage, error)
 	MarketIntelligence(context.Context, string) (intelligence.MarketIntelligence, error)
+	MarketObservations(ctx context.Context, sourceMarketID string, limit int) ([]intelligence.Observation, error)
 }
 
 type intelligenceHandler struct {
@@ -26,6 +30,7 @@ func registerIntelligenceRoutes(mux *http.ServeMux, service intelligenceReader) 
 	handler := intelligenceHandler{service: service}
 	mux.HandleFunc("GET /api/v1/intelligence/signals", handler.signals)
 	mux.HandleFunc("GET /api/v1/markets/{id}/intelligence", handler.market)
+	mux.HandleFunc("GET /api/v1/markets/{id}/observations", handler.observations)
 }
 
 func (handler intelligenceHandler) signals(w http.ResponseWriter, r *http.Request) {
@@ -102,8 +107,44 @@ func (handler intelligenceHandler) market(w http.ResponseWriter, r *http.Request
 	writeJSONResponse(w, http.StatusOK, intelligence.ToMarketIntelligenceDTO(result))
 }
 
+func (handler intelligenceHandler) observations(w http.ResponseWriter, r *http.Request) {
+	if handler.service == nil {
+		writeMarketError(w, http.StatusServiceUnavailable, "INTELLIGENCE_UNAVAILABLE", "intelligence service is unavailable")
+		return
+	}
+	marketID := r.PathValue("id")
+	if !types.IsBase58Address(marketID) {
+		writeMarketError(w, http.StatusBadRequest, "VALIDATION_ERROR", "market id must be a base58 address")
+		return
+	}
+	limit := 100
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed < 1 || parsed > maximumObservationHistoryLimit {
+			writeMarketError(w, http.StatusBadRequest, "VALIDATION_ERROR", "limit must be an integer from 1 to 500")
+			return
+		}
+		limit = parsed
+	}
+	result, err := handler.service.MarketObservations(r.Context(), marketID, limit)
+	if err != nil {
+		writeIntelligenceError(w, err)
+		return
+	}
+	// An empty history is a valid state; the response always carries the
+	// market_id the caller asked about so the UI can name the market.
+	response := struct {
+		MarketID     string                     `json:"market_id"`
+		Observations []intelligence.Observation `json:"observations"`
+	}{MarketID: marketID, Observations: result}
+	if response.Observations == nil {
+		response.Observations = []intelligence.Observation{}
+	}
+	writeJSONResponse(w, http.StatusOK, response)
+}
+
 func writeIntelligenceError(w http.ResponseWriter, err error) {
-	if errors.Is(err, ErrMarketNotFound) {
+	if errors.Is(err, ErrMarketNotFound) || errors.Is(err, pgx.ErrNoRows) {
 		writeMarketError(w, http.StatusNotFound, "MARKET_NOT_FOUND", "market was not found")
 		return
 	}

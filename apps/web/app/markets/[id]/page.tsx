@@ -1,4 +1,6 @@
 import { getMarket } from '@/lib/api-client';
+import { ApiError } from '@/lib/api-client';
+import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
@@ -14,9 +16,38 @@ function formatVolume(volume: string): string {
   return `$${num.toFixed(0)}`;
 }
 
+/** Format a timestamp that the backend may legitimately not have. */
+function formatDate(value: string | null | undefined): string {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '—';
+  return format(parsed, 'MMM d, yyyy');
+}
+
+function formatAge(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return formatDistanceToNow(parsed) + ' ago';
+}
+
 export default async function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { market, observations, signals } = await getMarket(id);
+
+  let data;
+  try {
+    data = await getMarket(id);
+  } catch (error) {
+    // A market the backend does not know is a genuine 404, not a server
+    // failure. Anything else (unreachable gateway, query failure) propagates
+    // to Next's error boundary, which offers the user a retry.
+    if (error instanceof ApiError && error.status === 404) {
+      notFound();
+    }
+    throw error;
+  }
+
+  const { market, observations, signals } = data;
 
   const hasHistory = observations.length >= 2;
   const sortedSignals = [...signals].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -26,7 +57,9 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ i
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-3xl font-bold tracking-tight">{market.title}</h1>
+          {/* Panta legitimately serves markets whose title is empty; the
+              description or image carries the content in that case. */}
+          <h1 className="text-3xl font-bold tracking-tight">{market.title?.trim() || 'Untitled market'}</h1>
           <Badge variant={getStatusVariant(market.status)} className="text-sm">{market.status}</Badge>
         </div>
         {market.description && (
@@ -35,12 +68,17 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ i
         <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-muted-foreground">
           {market.category && <span>Category: {market.category}</span>}
           {market.closes_at && (
-            <span>Closes: {format(new Date(market.closes_at), 'MMM d, yyyy')}</span>
+            <span>Closes: {formatDate(market.closes_at)}</span>
           )}
-          <span className="flex items-center gap-1 text-slate-500">
-            <Activity className="w-3.5 h-3.5" />
-            Last updated {formatDistanceToNow(new Date(market.updated_at || market.created_at))} ago
-          </span>
+          {(() => {
+            const age = formatAge(market.updated_at || market.created_at);
+            return age ? (
+              <span className="flex items-center gap-1 text-slate-500">
+                <Activity className="w-3.5 h-3.5" />
+                Last updated {age}
+              </span>
+            ) : null;
+          })()}
         </div>
       </div>
 
@@ -178,12 +216,12 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ i
             </div>
             <div>
               <dt className="text-muted-foreground">Created</dt>
-              <dd className="mt-1 text-sm">{format(new Date(market.created_at), 'MMM d, yyyy')}</dd>
+              <dd className="mt-1 text-sm">{formatDate(market.created_at)}</dd>
             </div>
             {market.closes_at && (
               <div>
                 <dt className="text-muted-foreground">Closes</dt>
-                <dd className="mt-1 text-sm">{format(new Date(market.closes_at), 'MMM d, yyyy')}</dd>
+                <dd className="mt-1 text-sm">{formatDate(market.closes_at)}</dd>
               </div>
             )}
           </dl>

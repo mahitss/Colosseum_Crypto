@@ -130,7 +130,13 @@ type WatchlistMarketDetail struct {
 // This is the canonical record of a detected signal, distinct from the transient Signal
 // used during sync. SignalEvent includes a fingerprint for deduplication.
 type SignalEvent struct {
-	ID                int64     `json:"id"`
+	ID     int64 `json:"id"`
+	// SignalID records which signals row produced this event. It is the
+	// durable bridge cursor: the worker bridges with signals.id > max of this
+	// column, so a tick that fails after persisting signals but before
+	// bridging is recovered by the next tick regardless of wall-clock.
+	// Nullable for events bridged before the cursor existed.
+	SignalID          *int64    `json:"signal_id"`
 	MarketID          string    `json:"market_id"`
 	SourceMarketID    string    `json:"source_market_id"`
 	SignalType        string    `json:"signal_type"`

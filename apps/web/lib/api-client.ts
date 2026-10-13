@@ -249,6 +249,85 @@ export async function getHealth(): Promise<HealthResponse> {
   return fetchApi<HealthResponse>('/health');
 }
 
+// ---------------------------------------------------------------------------
+// Gateway response envelopes.
+//
+// These describe what the Go gateway actually serves today. Earlier versions
+// of this client called /intelligence/* paths that did not exist on the
+// gateway, so every markets and signals fetch 404'd and the market detail
+// page crashed. The shapes below are the gateway's, mapped locally into the
+// frontend types without inventing data: absent totals stay absent.
+// ---------------------------------------------------------------------------
+
+// GET /api/v1/markets (live Panta catalog proxy)
+interface GatewayMarketPage {
+  items: Array<Market & { nextCursor?: unknown }>;
+  nextCursor: string | null;
+}
+
+// GET /api/v1/intelligence/signals
+interface GatewaySignalPage {
+  items: Array<{
+    id: number;
+    market_id: string;
+    timestamp: string;
+    signal_type: string;
+    severity: Signal['severity'];
+    metric: string;
+    previous_value: string | null;
+    current_value: string | null;
+    absolute_change: string | null;
+    percentage_change: string | null;
+    percentage_points: string | null;
+    window: string;
+    source: string;
+  }>;
+  next_cursor: string | null;
+  total: number;
+  market_count: number;
+}
+
+// GET /api/v1/markets/{id}/intelligence
+interface GatewayMarketIntelligence {
+  market: {
+    id: string;
+    source: string;
+    source_market_id: string;
+    title: string;
+    description: string | null;
+    category: string | null;
+    status: string;
+    phase: string | null;
+    created_at: string | null;
+    yes_probability: string | null;
+    no_probability: string | null;
+    volume_usdc: string | null;
+    liquidity: string | null;
+    closes_at: string | null;
+    resolution_status: string | null;
+  };
+  latest_observation: Observation | null;
+  recent_signals: GatewaySignalPage['items'];
+  current_metrics: {
+    insufficient_data: boolean;
+    observed_at: string | null;
+  };
+}
+
+// GET /api/v1/markets/{id}/observations
+interface GatewayObservationHistory {
+  market_id: string;
+  observations: Array<{
+    id: number;
+    market_id: string;
+    timestamp: string;
+    yes_probability: string | null;
+    no_probability: string | null;
+    volume_usdc: string | null;
+    liquidity: string | null;
+  }>;
+}
+
 // Markets
 export async function getMarkets(params: MarketQueryParams = {}): Promise<MarketListResponse> {
   const searchParams = new URLSearchParams();
@@ -256,14 +335,64 @@ export async function getMarkets(params: MarketQueryParams = {}): Promise<Market
   if (params.limit) searchParams.set('limit', String(params.limit));
   if (params.status) searchParams.set('status', params.status);
   if (params.category) searchParams.set('category', params.category);
-  if (params.search) searchParams.set('search', params.search);
 
   const query = searchParams.toString();
-  return fetchApi<MarketListResponse>(`/intelligence/markets${query ? `?${query}` : ''}`);
+  const page = await fetchApi<GatewayMarketPage>(`/api/v1/markets${query ? `?${query}` : ''}`);
+  // The Panta catalog proxy cursor-paginates and reports no total; the total
+  // stays undefined rather than being fabricated, and the markets page hides
+  // the total line when it is absent.
+  return {
+    markets: page.items ?? [],
+    pagination: {
+      cursor: page.nextCursor ?? null,
+      has_more: Boolean(page.nextCursor),
+      total: undefined as unknown as number,
+    },
+  };
 }
 
 export async function getMarket(id: string): Promise<MarketDetailResponse> {
-  return fetchApi<MarketDetailResponse>(`/intelligence/markets/${id}`);
+  const [intelligence, history] = await Promise.all([
+    fetchApi<GatewayMarketIntelligence>(
+      `/api/v1/markets/${encodeURIComponent(id)}/intelligence`
+    ),
+    fetchApi<GatewayObservationHistory>(
+      `/api/v1/markets/${encodeURIComponent(id)}/observations?limit=200`
+    ),
+  ]);
+  const market: Market = {
+    ...intelligence.market,
+    phase: intelligence.market.phase ?? '',
+    // The gateway does not track a separate updated_at on the summary; the
+    // most recent observation time is the honest "last updated" datum.
+    updated_at: intelligence.current_metrics.observed_at ?? intelligence.market.created_at,
+  };
+  const signals: Signal[] = (intelligence.recent_signals ?? []).map((signal) => ({
+    id: signal.id,
+    market_id: signal.market_id,
+    observation_id: undefined as unknown as number,
+    timestamp: signal.timestamp,
+    signal_type: signal.signal_type,
+    severity: signal.severity,
+    metric: signal.metric,
+    previous_value: signal.previous_value,
+    current_value: signal.current_value,
+    absolute_change: signal.absolute_change,
+    percentage_change: signal.percentage_change,
+    percentage_points: signal.percentage_points,
+    observation_window: signal.window,
+    source: signal.source,
+  }));
+  const observations: Observation[] = (history.observations ?? []).map((observation) => ({
+    id: observation.id,
+    market_id: observation.market_id,
+    observed_at: observation.timestamp,
+    yes_probability: observation.yes_probability,
+    no_probability: observation.no_probability,
+    volume_usdc: observation.volume_usdc,
+    liquidity: observation.liquidity,
+  }));
+  return { market, observations, signals };
 }
 
 // Signals
@@ -278,7 +407,31 @@ export async function getSignals(params: SignalQueryParams = {}): Promise<Signal
   if (params.to) searchParams.set('to', params.to);
 
   const query = searchParams.toString();
-  return fetchApi<SignalListResponse>(`/intelligence/signals${query ? `?${query}` : ''}`);
+  const page = await fetchApi<GatewaySignalPage>(`/api/v1/intelligence/signals${query ? `?${query}` : ''}`);
+  const signals: Signal[] = (page.items ?? []).map((signal) => ({
+    id: signal.id,
+    market_id: signal.market_id,
+    observation_id: undefined as unknown as number,
+    timestamp: signal.timestamp,
+    signal_type: signal.signal_type,
+    severity: signal.severity,
+    metric: signal.metric,
+    previous_value: signal.previous_value,
+    current_value: signal.current_value,
+    absolute_change: signal.absolute_change,
+    percentage_change: signal.percentage_change,
+    percentage_points: signal.percentage_points,
+    observation_window: signal.window,
+    source: signal.source,
+  }));
+  return {
+    signals,
+    pagination: {
+      cursor: page.next_cursor ?? null,
+      has_more: Boolean(page.next_cursor),
+      total: page.total,
+    },
+  };
 }
 
 export async function getRecentSignals(limit = 10): Promise<SignalListResponse> {
@@ -300,19 +453,26 @@ export interface SummaryStats {
 
 export async function getSummaryStats(): Promise<SummaryStats> {
   try {
-    const [markets, signals] = await Promise.all([
-      getMarkets({ limit: 1 }),
-      getSignals({ limit: 1 }),
-    ]);
+    // Count the tracked catalog by following the real pagination once: the
+    // gateway serves no total for the Panta catalog, so the number shown is
+    // the number of distinct market ids the catalog actually returned.
+    const firstPage = await getMarkets({ limit: 50 });
+    const ids = new Set(firstPage.markets.map((market) => market.id));
+    if (firstPage.pagination.cursor) {
+      const secondPage = await getMarkets({ limit: 50, cursor: firstPage.pagination.cursor });
+      secondPage.markets.forEach((market) => ids.add(market.id));
+    }
 
-    // Get significant signals count
+    const signals = await getSignals({ limit: 1 });
     const significantSignals = await getSignals({ severity: 'SIGNIFICANT', limit: 1 });
 
     return {
-      marketsTracked: markets.pagination.total,
+      marketsTracked: ids.size,
       activeSignals: signals.pagination.total,
       significantChanges: significantSignals.pagination.total,
-      marketsUpdated: new Date().toISOString(),
+      // The most recent signal time is the real "when did the data last
+      // change" datum; null when no signals exist yet.
+      marketsUpdated: signals.signals[0]?.timestamp ?? null,
     };
   } catch (error) {
     console.error('Failed to fetch summary stats:', error);

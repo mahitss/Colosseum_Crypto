@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -30,9 +31,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Create JWT user resolver and register it
-	jwtResolver := auth.NewJWTUserResolver(jwtConfig, logger)
-	httpapi.RegisterUserResolver(jwtResolver)
+	// Identity resolution. The default is the secure JWT resolver: every
+	// user-scoped route (watchlists, alert rules, notifications) requires a
+	// valid Bearer token. The repository deliberately ships a single-user
+	// development resolver (httpapi.DefaultUserResolver, "local-user") for the
+	// period before a login/token-issuance flow exists; AUTH_MODE=dev-single-user
+	// opts into that documented mode for local development ONLY. It must never
+	// be set in production: it identifies every caller as the same local user.
+	authMode := strings.TrimSpace(os.Getenv("AUTH_MODE"))
+	if authMode == "dev-single-user" {
+		logger.Warn("AUTH_MODE=dev-single-user: all user-scoped routes resolve to the shared local development user; never enable this in production")
+	} else {
+		if authMode != "" {
+			logger.Error("unsupported AUTH_MODE", slog.String("value", authMode))
+			os.Exit(1)
+		}
+		// Create JWT user resolver and register it
+		jwtResolver := auth.NewJWTUserResolver(jwtConfig, logger)
+		httpapi.RegisterUserResolver(jwtResolver)
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -161,7 +178,10 @@ func main() {
 
 	logger.Info("gateway listening", slog.String("address", addr))
 
-	// Build the handler chain: AuthMiddleware -> RequestID -> Routes
+	// Build the handler chain: CORS -> AuthMiddleware -> RequestID -> Routes.
+	// CORS is outermost so preflight OPTIONS requests are answered before
+	// anything else; it is transport policy only and never grants access the
+	// auth middleware would not already allow.
 	baseHandler := httpapi.NewHandlerWithEnterprise(
 		adapterClient,
 		repository,
@@ -176,9 +196,19 @@ func main() {
 	// Wrap with auth middleware (validates JWT, sets user context)
 	authenticatedHandler := auth.AuthMiddleware(jwtConfig, logger, baseHandler)
 
+	// CORS allowlist: explicit origins from CORS_ALLOWED_ORIGINS (comma
+	// separated). When unset, only the documented local development origins
+	// are allowed; "*" is rejected outright.
+	corsOrigins := strings.Split(os.Getenv("CORS_ALLOWED_ORIGINS"), ",")
+	corsMiddleware, err := httpapi.NewCORSMiddleware(corsOrigins, logger)
+	if err != nil {
+		logger.Error("invalid CORS configuration", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           authenticatedHandler,
+		Handler:           corsMiddleware(authenticatedHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	shutdown, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

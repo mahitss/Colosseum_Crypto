@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -16,6 +17,16 @@ const (
 	pantaPageLimit  = 50
 	defaultMaxPages = 2
 	maximumMaxPages = 100
+
+	// detailFetchConcurrency bounds how many market-detail requests the
+	// syncer has in flight at once. Panta's detail endpoint answers in about
+	// two seconds, so a sequential fetch of a full catalog page set (~100
+	// markets) needs ~200 seconds and always dies at the 120-second tick
+	// deadline before anything is persisted. Eight concurrent requests bring
+	// the same work in well under the deadline while still being gentle on
+	// the upstream. Semantics are unchanged: per-item error accounting and
+	// the resulting market order match the old sequential loop.
+	detailFetchConcurrency = 8
 )
 
 type marketReader interface {
@@ -42,10 +53,18 @@ type Syncer struct {
 	now          func() time.Time
 }
 
-func NewSyncer(store syncStore, panta marketReader, engine Engine, config SignalConfig) *Syncer {
+func NewSyncer(store syncStore, panta marketReader, engine Engine, config SignalConfig, maxPages int) *Syncer {
+	if maxPages < 1 || maxPages > maximumMaxPages {
+		maxPages = defaultMaxPages
+	}
 	return &Syncer{
-		store: store, panta: panta, engine: engine, config: config,
-		maxPages: defaultMaxPages, newRequestID: requestID, now: time.Now,
+		store:        store,
+		panta:        panta,
+		engine:       engine,
+		config:       config,
+		maxPages:     maxPages,
+		newRequestID: requestID,
+		now:          time.Now,
 	}
 }
 
@@ -75,22 +94,50 @@ func (syncer *Syncer) Run(ctx context.Context, suppliedRequestID string) (stats 
 		stats.Errors++
 		return stats, err
 	}
+	// Fetch market details concurrently with a bounded pool. The detail
+	// endpoint carries the authoritative spot prices the engine consumes.
+	// Order is preserved by writing each result into its catalog slot;
+	// failures are counted exactly as the sequential loop counted them.
+	slotted := make([]Market, len(catalog))
+	succeeded := make([]bool, len(catalog))
+	var statsMutex sync.Mutex
+	var workerGroup sync.WaitGroup
+	tokens := make(chan struct{}, detailFetchConcurrency)
+	for index, catalogMarket := range catalog {
+		workerGroup.Add(1)
+		go func(index int, catalogMarket types.Market) {
+			defer workerGroup.Done()
+			tokens <- struct{}{}
+			defer func() { <-tokens }()
+			detail, err := syncer.panta.GetMarket(ctx, catalogMarket.ID)
+			if err != nil {
+				statsMutex.Lock()
+				stats.Errors++
+				statsMutex.Unlock()
+				return
+			}
+			detail.Source = SourcePanta
+			detail.SourceMarketID = detail.ID
+			normalized, err := NormalizeMarket(detail)
+			if err != nil {
+				statsMutex.Lock()
+				stats.Errors++
+				statsMutex.Unlock()
+				return
+			}
+			slotted[index] = normalized
+			succeeded[index] = true
+			statsMutex.Lock()
+			stats.MarketsNormalized++
+			statsMutex.Unlock()
+		}(index, catalogMarket)
+	}
+	workerGroup.Wait()
 	markets := make([]Market, 0, len(catalog))
-	for _, catalogMarket := range catalog {
-		detail, err := syncer.panta.GetMarket(ctx, catalogMarket.ID)
-		if err != nil {
-			stats.Errors++
-			continue
+	for index := range catalog {
+		if succeeded[index] {
+			markets = append(markets, slotted[index])
 		}
-		detail.Source = SourcePanta
-		detail.SourceMarketID = detail.ID
-		normalized, err := NormalizeMarket(detail)
-		if err != nil {
-			stats.Errors++
-			continue
-		}
-		stats.MarketsNormalized++
-		markets = append(markets, normalized)
 	}
 
 	transaction, err := syncer.store.Begin(ctx)
@@ -195,7 +242,13 @@ func (syncer *Syncer) persistObservation(ctx context.Context, transaction pgx.Tx
 	}
 	stats.ObservationsCreated++
 	*engineInputs = append(*engineInputs, EngineObservation{
-		MarketID: market.SourceMarketID, ObservationID: observationID, ObservedAt: observedAt.Format(time.RFC3339Nano),
+		// The engine treats the market id as an opaque key and echoes it back
+		// in its signals, where it is written to signals.market_id — a UUID
+		// foreign key to markets(id). Feeding the base58 source id here made
+		// every signal insert fail with SQLSTATE 22P02, so the internal uuid
+		// is the id the engine must carry. Consumers join back to
+		// markets.source_market_id when they need the Panta id.
+		MarketID: internalID, ObservationID: observationID, ObservedAt: observedAt.Format(time.RFC3339Nano),
 		ObservationWindow: syncer.config.ObservationWindow.String(), IsNewMarket: isNew,
 		Previous: previous, WindowPrevious: windowPrevious, Current: observation,
 	})

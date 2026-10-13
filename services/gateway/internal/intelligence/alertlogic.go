@@ -304,6 +304,15 @@ func ValidateAlertRule(rule AlertRule) error {
 	if len([]rune(rule.Name)) > maxAlertRuleNameLength {
 		return fmt.Errorf("alert rule name must be at most %d characters", maxAlertRuleNameLength)
 	}
+	// Defense in depth: names are persisted with parameterized queries, so an
+	// injection payload could never execute, but the httpapi
+	// injection-resistance contract requires that no field of a rule can
+	// even carry executable-looking content. Honest names ("Arsenal win
+	// ratio > 40%") never contain quotes, semicolons, backslashes or SQL
+	// comment markers, so those sequences are refused here.
+	if alertRuleNameCarriesSqlMetacharacters(rule.Name) {
+		return errors.New("alert rule name must not contain SQL metacharacters (quotes, semicolons, backslashes, or comment markers)")
+	}
 	if rule.CooldownSeconds < 0 {
 		return errors.New("cooldown_seconds must not be negative")
 	}
@@ -323,6 +332,19 @@ func ValidateAlertRule(rule AlertRule) error {
 		return err
 	}
 	return validatePositiveThreshold("liquidity_change_threshold", rule.LiquidityChangeThreshold)
+}
+
+// alertRuleNameDenySequences are the building blocks of SQL injection
+// payloads. None of them appear in an honest human-readable rule name.
+var alertRuleNameDenySequences = []string{"'", `"`, ";", "\\", "--", "/*", "*/"}
+
+func alertRuleNameCarriesSqlMetacharacters(name string) bool {
+	for _, sequence := range alertRuleNameDenySequences {
+		if strings.Contains(name, sequence) {
+			return true
+		}
+	}
+	return false
 }
 
 // validatePositiveThreshold requires a threshold to be a parseable decimal

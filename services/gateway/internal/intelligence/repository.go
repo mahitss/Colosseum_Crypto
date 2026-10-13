@@ -254,6 +254,60 @@ func (r *Repository) MarketIntelligence(ctx context.Context, sourceMarketID stri
 	return result, rows.Err()
 }
 
+// MarketObservations returns the most recent observations for the market with
+// the given source (Panta) id, newest first. An unknown market surfaces
+// pgx.ErrNoRows so the HTTP layer can answer 404 rather than 500, and an empty
+// history is a valid state represented by an empty slice, not an error.
+func (r *Repository) MarketObservations(ctx context.Context, sourceMarketID string, limit int) ([]Observation, error) {
+	var internalID string
+	if err := r.pool.QueryRow(ctx, `SELECT id::text FROM markets WHERE source_market_id=$1`, sourceMarketID).Scan(&internalID); err != nil {
+		return nil, err
+	}
+	rows, err := r.pool.Query(ctx,
+		`SELECT id,market_id::text,observed_at,yes_probability::text,no_probability::text,volume_usdc::text,liquidity::text
+		 FROM market_observations WHERE market_id=$1 ORDER BY observed_at DESC,id DESC LIMIT $2`,
+		internalID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	observations := make([]Observation, 0, limit)
+	for rows.Next() {
+		var observation Observation
+		if err := rows.Scan(&observation.ID, &observation.MarketID, &observation.Timestamp,
+			&observation.YesProbability, &observation.NoProbability, &observation.VolumeUSDC, &observation.Liquidity); err != nil {
+			return nil, err
+		}
+		observations = append(observations, observation)
+	}
+	return observations, rows.Err()
+}
+
+// SignalsSince returns the persisted signals with id > afterSignalID in
+// ascending id order, capped at limit. This is the bridge pass's durable
+// read: the worker pairs it with LatestBridgedSignalID so signals persisted
+// by a tick that failed before bridging are still picked up by a later tick.
+// The wall-clock bridge window that predated this cursor silently dropped
+// exactly those signals.
+func (r *Repository) SignalsSince(ctx context.Context, afterSignalID int64, limit int) ([]Signal, error) {
+	rows, err := r.pool.Query(ctx, `SELECT s.id,s.market_id::text,m.source_market_id,s.observation_id,s.timestamp,s.signal_type,s.severity,s.metric,s.previous_value::text,s.current_value::text,s.absolute_change::text,s.percentage_change::text,s.percentage_points::text,s.observation_window,s.source FROM signals s JOIN markets m ON m.id=s.market_id WHERE s.id > $1 ORDER BY s.id ASC LIMIT $2`, afterSignalID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	signals := make([]Signal, 0, limit)
+	for rows.Next() {
+		var signal Signal
+		if err := rows.Scan(&signal.ID, &signal.MarketID, &signal.SourceMarketID, &signal.ObservationID, &signal.Timestamp, &signal.SignalType, &signal.Severity,
+			&signal.Metric, &signal.PreviousValue, &signal.CurrentValue, &signal.AbsoluteChange,
+			&signal.PercentageChange, &signal.PercentagePoints, &signal.ObservationWindow, &signal.Source); err != nil {
+			return nil, err
+		}
+		signals = append(signals, signal)
+	}
+	return signals, rows.Err()
+}
+
 func (r *Repository) MarketBySourceID(ctx context.Context, sourceMarketID string) (Market, error) {
 	var market Market
 	err := r.pool.QueryRow(ctx, `SELECT id::text,source,source_market_id,title,description,category,status,phase,yes_probability::text,no_probability::text,liquidity::text,volume_usdc::text,created_at,closes_at,resolution_status FROM markets WHERE source_market_id=$1`, sourceMarketID).Scan(

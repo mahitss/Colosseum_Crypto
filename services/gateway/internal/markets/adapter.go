@@ -74,7 +74,9 @@ func (c *AdapterClient) GetMarket(ctx context.Context, id string) (types.Market,
 	if err := c.get(ctx, "markets/"+id+"/", nil, &result); err != nil {
 		return types.Market{}, err
 	}
-	if result.ID == "" || result.Title == "" {
+	// Panta legitimately serves markets with an empty title (description or
+	// image carries the content); only the id is required to address a market.
+	if result.ID == "" {
 		return types.Market{}, errors.New("market adapter returned malformed data")
 	}
 	return result, nil

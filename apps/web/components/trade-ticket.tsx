@@ -264,7 +264,7 @@ export function TradeTicket({ market }: { market: any }) {
       <Card>
         <CardHeader>
           <CardTitle>Trade</CardTitle>
-          <CardDescription>{market.title}</CardDescription>
+          <CardDescription>{market.title?.trim() || 'Untitled market'}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Side selection */}

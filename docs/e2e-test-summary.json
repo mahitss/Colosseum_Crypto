@@ -1,0 +1,30 @@
+{
+  "status": "READY WITH MINOR ISSUES",
+  "timestamp": "2026-10-13T23:50:00+05:30",
+  "routes_tested": 12,
+  "routes_passed": 8,
+  "routes_failed": 2,
+  "routes_blocked": 2,
+  "tests_passed": 28,
+  "tests_failed": 4,
+  "tests_blocked": 4,
+  "p0": 0,
+  "p1": 3,
+  "p2": 2,
+  "p3": 2,
+  "p4": 0,
+  "critical_blockers": [
+    "Q7: /markets/[id] SSR returns HTTP 500 on valid market id",
+    "Q10: /system-status route missing (404, linked from sidebar)"
+  ],
+  "top_risks": [
+    "Market detail page crashes (500) — avoid in demo",
+    "Alert firing chain unproven end-to-end (signal_events/alert_events/notifications = 0)",
+    "Frontend auth gap — JWT required for watchlists/alerts, dev mode works for demo",
+    "Committed .env.local contains malformed PANTA_API_KEY (duplicated pk_live_ prefix)",
+    "Default AI_MODEL points at broken free OpenRouter models (need paid model)",
+    "Sidebar links to nonexistent /system-status route"
+  ],
+  "production_ready": false,
+  "demo_ready": true
+}

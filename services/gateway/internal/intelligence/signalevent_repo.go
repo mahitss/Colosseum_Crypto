@@ -42,7 +42,7 @@ var ErrSignalEventNotFound = errors.New("signal event not found")
 // `se` for the event table and `m` for the joined market. Numeric columns are
 // cast to text so they scan into *string without passing through float64 and
 // without losing the stored NUMERIC(38,12) precision.
-const signalEventColumns = `se.id, se.market_id::text, m.source_market_id, se.signal_type, se.severity, se.metric, se.previous_value::text, se.current_value::text, se.absolute_change::text, se.percentage_change::text, se.percentage_points::text, se.observation_window, se.observation_id, se.observed_at, se.fingerprint, se.source, se.created_at`
+const signalEventColumns = `se.id, se.market_id::text, m.source_market_id, se.signal_type, se.severity, se.metric, se.previous_value::text, se.current_value::text, se.absolute_change::text, se.percentage_change::text, se.percentage_points::text, se.observation_window, se.observation_id, se.observed_at, se.fingerprint, se.source, se.created_at, se.signal_id`
 
 // signalEventJoin joins the event to its market so SourceMarketID is available
 // without a second query. The join is an inner join because market_id is a
@@ -56,7 +56,7 @@ func scanSignalEvent(row rowScanner) (SignalEvent, error) {
 		&event.Metric, &event.PreviousValue, &event.CurrentValue, &event.AbsoluteChange,
 		&event.PercentageChange, &event.PercentagePoints, &event.ObservationWindow,
 		&event.ObservationID, &event.ObservedAt, &event.Fingerprint, &event.Source,
-		&event.CreatedAt,
+		&event.CreatedAt, &event.SignalID,
 	); err != nil {
 		return SignalEvent{}, err
 	}
@@ -89,9 +89,9 @@ func insertSignalEvent(ctx context.Context, executor rowQueryer, event SignalEve
 		INSERT INTO signal_events (
 			market_id,signal_type,severity,metric,previous_value,current_value,
 			absolute_change,percentage_change,percentage_points,observation_window,
-			observation_id,observed_at,fingerprint,source
+			observation_id,observed_at,fingerprint,source,signal_id
 		) VALUES (
-			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
 		)
 		ON CONFLICT (fingerprint) DO NOTHING
 		RETURNING id, created_at`,
@@ -99,6 +99,7 @@ func insertSignalEvent(ctx context.Context, executor rowQueryer, event SignalEve
 		event.PreviousValue, event.CurrentValue, event.AbsoluteChange,
 		event.PercentageChange, event.PercentagePoints, event.ObservationWindow,
 		event.ObservationID, event.ObservedAt, event.Fingerprint, event.Source,
+		event.SignalID,
 	).Scan(&id, &createdAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		// The fingerprint already exists. Another worker, an earlier sync, or a
@@ -125,6 +126,21 @@ func (r *Repository) SignalEventByFingerprint(ctx context.Context, fingerprint s
 		return nil, err
 	}
 	return &event, nil
+}
+
+// LatestBridgedSignalID returns the highest signals.id the bridge pass has
+// recorded, or zero when nothing has ever been bridged. The worker's bridge
+// reads it before listing signals so its progress survives failed ticks and
+// process restarts.
+func (r *Repository) LatestBridgedSignalID(ctx context.Context) (int64, error) {
+	var cursor *int64
+	if err := r.pool.QueryRow(ctx, `SELECT max(signal_id) FROM signal_events`).Scan(&cursor); err != nil {
+		return 0, err
+	}
+	if cursor == nil {
+		return 0, nil
+	}
+	return *cursor, nil
 }
 
 func (r *Repository) CountSignalEvents(ctx context.Context) (int64, error) {
@@ -205,7 +221,15 @@ func scanSignalEvents(ctx context.Context, executor eventQueryer, query string, 
 // caller state which identity it holds instead of relying on a field whose meaning
 // depends on where the value came from.
 func SignalEventFromSignal(signal Signal, marketUUID, sourceMarketID string) SignalEvent {
+	// A signal id of 0 means the caller holds an engine-fresh signal that has
+	// never been persisted, so there is no cursor value to carry.
+	var signalID *int64
+	if signal.ID > 0 {
+		id := signal.ID
+		signalID = &id
+	}
 	return SignalEvent{
+		SignalID:          signalID,
 		MarketID:          marketUUID,
 		SourceMarketID:    sourceMarketID,
 		SignalType:        signal.SignalType,

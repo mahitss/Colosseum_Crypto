@@ -9,7 +9,11 @@ import (
 )
 
 func NormalizeMarket(source types.Market) (Market, error) {
-	if source.SourceMarketID == "" || !types.IsBase58Address(source.SourceMarketID) || strings.TrimSpace(source.Title) == "" {
+	// Panta legitimately serves markets with an empty title (the description
+	// or image carries the content), so only the addressable id is required.
+	// Rejecting empty titles here dropped the majority of the live catalog
+	// from every ingestion tick, leaving the intelligence chain empty.
+	if source.SourceMarketID == "" || !types.IsBase58Address(source.SourceMarketID) {
 		return Market{}, ErrInvalidMarket
 	}
 	market := Market{
@@ -22,7 +26,10 @@ func NormalizeMarket(source types.Market) (Market, error) {
 	if source.Category != "" {
 		market.Category = stringPointer(source.Category)
 	}
-	if source.VolumeUSDC != nil {
+	// Panta returns an empty string (not JSON null) for decimal fields it has
+	// no value for; that is indistinguishable from "no data" and is treated as
+	// nil rather than a malformed market.
+	if source.VolumeUSDC != nil && string(*source.VolumeUSDC) != "" {
 		value, err := validateDecimal(string(*source.VolumeUSDC), false)
 		if err != nil {
 			return Market{}, err
@@ -49,7 +56,8 @@ func NormalizeMarket(source types.Market) (Market, error) {
 }
 
 func probability(value *types.HumanUSDC) (*string, error) {
-	if value == nil {
+	// An empty string is Panta's spelling of "no value", not a bad decimal.
+	if value == nil || string(*value) == "" {
 		return nil, nil
 	}
 	validated, err := validateDecimal(string(*value), false)

@@ -149,6 +149,12 @@ func (c *Client) ListMarkets(ctx context.Context, query PantaMarketQuery) (Panta
 
 	var page PantaMarketPage
 	if err := c.getJSON(ctx, "markets/", values, &page); err != nil {
+		// A 404 on the list endpoint means the cursor points past the end of the
+		// catalog. Treat it as an empty page (end of catalog) rather than an error.
+		var adapterErr *adaptererrors.Error
+		if errors.As(err, &adapterErr) && adapterErr.Kind == adaptererrors.KindNotFound {
+			return PantaMarketPage{Items: []PantaMarket{}, PantaPagination: PantaPagination{NextCursor: nil}}, nil
+		}
 		return PantaMarketPage{}, err
 	}
 	for _, market := range page.Items {
@@ -330,8 +336,13 @@ func validStatus(status string) bool {
 	}
 }
 
+// validateMarket guards against upstream responses that cannot be addressed at
+// all. Panta legitimately returns markets with an empty title (the description
+// or image carries the content), so only the market id is required: rejecting
+// on an empty title would break the whole catalog page and, with it, the
+// worker's ingestion chain against real production data.
 func validateMarket(market PantaMarket) error {
-	if market.MarketID == "" || market.Title == "" {
+	if market.MarketID == "" {
 		return adaptererrors.New(adaptererrors.KindMalformed)
 	}
 	return nil

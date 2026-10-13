@@ -24,9 +24,23 @@ export default function MarketsPage() {
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['markets', { cursor, search: debouncedSearch, status: statusFilter, category: categoryFilter }],
-    queryFn: () => getMarkets({ cursor, search: debouncedSearch, status: statusFilter, category: categoryFilter, limit: 20 }),
+    queryKey: ['markets', { cursor, status: statusFilter, category: categoryFilter }],
+    queryFn: () => getMarkets({ cursor, status: statusFilter, category: categoryFilter, limit: 20 }),
   });
+
+  // Search filters the currently loaded page client-side: the gateway proxies
+  // Panta's catalog and it defines no search parameter, so searching beyond the
+  // loaded page would require pretending the backend filtered when it did not.
+  const visibleMarkets = React.useMemo(() => {
+    const markets = data?.markets ?? [];
+    const needle = debouncedSearch.trim().toLowerCase();
+    if (!needle) return markets;
+    return markets.filter((market) =>
+      (market.title ?? '').toLowerCase().includes(needle) ||
+      (market.description ?? '').toLowerCase().includes(needle) ||
+      market.id.toLowerCase().includes(needle)
+    );
+  }, [data, debouncedSearch]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -125,7 +139,7 @@ export default function MarketsPage() {
               description="There was an error fetching market data. Please try again."
               onRetry={() => refetch()}
             />
-          ) : data?.markets.length === 0 ? (
+          ) : visibleMarkets.length === 0 ? (
             <EmptyState
               title="No markets found"
               description={debouncedSearch ? `No markets match "${debouncedSearch}"` : 'No markets are currently available.'}
@@ -152,11 +166,12 @@ export default function MarketsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data?.markets.map((market) => (
+                  {visibleMarkets.map((market) => (
                     <TableRow key={market.id} className="cursor-pointer hover:bg-slate-800/40 transition-colors" onClick={() => window.location.href = `/markets/${market.id}`}>
                       <TableCell className="max-w-md">
                         <Link href={`/markets/${market.id}`} className="block">
-                          <div className="font-medium truncate">{market.title}</div>
+                          {/* Panta serves some markets with an empty title. */}
+                          <div className="font-medium truncate">{market.title?.trim() || 'Untitled market'}</div>
                           {market.category && (
                             <div className="text-xs text-muted-foreground">{market.category}</div>
                           )}
@@ -175,7 +190,13 @@ export default function MarketsPage() {
                         {market.volume_usdc ? formatVolume(market.volume_usdc) : '—'}
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground text-sm">
-                        {formatDistanceToNow(new Date(market.updated_at || market.created_at))} ago
+                        {(() => {
+                          const stamp = market.updated_at || market.created_at;
+                          const parsed = stamp ? new Date(stamp) : null;
+                          return parsed && !Number.isNaN(parsed.getTime())
+                            ? `${formatDistanceToNow(parsed)} ago`
+                            : '—';
+                        })()}
                       </TableCell>
                     </TableRow>
                   ))}

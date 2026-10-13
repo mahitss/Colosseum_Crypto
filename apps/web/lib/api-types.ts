@@ -14,10 +14,11 @@ export interface Market {
   no_probability: string | null;
   liquidity: string | null;
   volume_usdc: string | null;
-  created_at: string;
+  // Panta does not always report a creation time; absence is a real state.
+  created_at: string | null;
   closes_at: string | null;
   resolution_status: string | null;
-  updated_at?: string;
+  updated_at?: string | null;
 }
 
 export interface Observation {
@@ -33,7 +34,8 @@ export interface Observation {
 export interface Signal {
   id: number;
   market_id: string;
-  observation_id: number;
+  // Not part of the gateway's signal DTO; optional so mappings stay honest.
+  observation_id?: number;
   timestamp: string;
   signal_type: string;
   severity: 'INFO' | 'WATCH' | 'SIGNIFICANT' | 'CRITICAL';

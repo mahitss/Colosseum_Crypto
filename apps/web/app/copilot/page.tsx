@@ -83,7 +83,7 @@ export default function CopilotPage() {
           <div className="flex flex-col h-[400px] overflow-auto border rounded-lg p-4 bg-slate-950 space-y-4">
             {messages.length === 0 ? (
               <div className="text-center text-slate-400 mt-10">
-                <p className="mb-4">Ask Prophet about prediction markets.</p>
+                <p className="mb-4">Ask Qevryn about prediction markets.</p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {SUGGESTED_PROMPTS.map((prompt, i) => (
                     <button
@@ -137,7 +137,7 @@ export default function CopilotPage() {
           
           <div className="mt-4 flex gap-2">
             <Input
-              placeholder="Ask Prophet..."
+              placeholder="Ask Qevryn..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && send()}

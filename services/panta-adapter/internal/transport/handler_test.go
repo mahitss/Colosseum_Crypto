@@ -99,8 +99,11 @@ func TestHealthRejectsInvalidConfigurationWithoutLeakingKey(t *testing.T) {
 }
 
 func TestMalformedPantaResponseIsMappedToSafeError(t *testing.T) {
+	// A market without a market id cannot be addressed by any downstream
+	// consumer, so the adapter must still reject the page as malformed and
+	// must not echo upstream internals or the API key in the error.
 	panta := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = io.WriteString(w, `{"items":[{"marketId":"secret-internal-id"}]}`)
+		_, _ = io.WriteString(w, `{"items":[{"title":"secret-internal-id"}]}`)
 	}))
 	defer panta.Close()
 	cfg := config.Config{BaseURL: panta.URL, APIKey: adapterTestKey, Timeout: time.Second}
@@ -113,6 +116,28 @@ func TestMalformedPantaResponseIsMappedToSafeError(t *testing.T) {
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/markets/", nil))
 	if response.Code != http.StatusBadGateway || strings.Contains(response.Body.String(), "secret-internal-id") || strings.Contains(response.Body.String(), adapterTestKey) {
 		t.Fatalf("unsafe or unexpected error: status=%d body=%s", response.Code, response.Body.String())
+	}
+}
+
+func TestEmptyTitleMarketWithIdIsServed(t *testing.T) {
+	// Panta's live catalog routinely contains markets whose title is empty
+	// (description or image carries the content). Such a page is valid
+	// upstream data and must be served, not rejected as malformed; rejecting
+	// it broke the worker's ingestion chain against production.
+	panta := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, `{"items":[{"marketId":"11111111111111111111111111111111","category":"sports","title":"","phase":"primary","status":"primary","marketType":"breaking","startTime":1791807275,"endTime":1798761600,"resolutionTime":1798765200,"region":"Global","resolved":false,"volumeUsdc":"3.00","yesPrice":"0.5","noPrice":"0.5"}],"nextCursor":null}`)
+	}))
+	defer panta.Close()
+	cfg := config.Config{BaseURL: panta.URL, APIKey: adapterTestKey, Timeout: time.Second}
+	apiClient, err := client.New(cfg.BaseURL, cfg.APIKey, cfg.Timeout, client.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := NewHandler(cfg, apiClient, NewMarketService(apiClient))
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/markets/", nil))
+	if response.Code != http.StatusOK {
+		t.Fatalf("empty-title market must be served: status=%d body=%s", response.Code, response.Body.String())
 	}
 }
 
